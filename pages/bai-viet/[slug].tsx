@@ -214,6 +214,19 @@ const SinglePost: NextPage<Props> = ({ post, meta }) => {
 
 export default SinglePost;
 
+// Helper function to normalize image URL
+const normalizeImageUrl = (imageUrl: string | undefined, baseUrl: string = "https://q8design.vn"): string => {
+  if (!imageUrl) return `${baseUrl}/logo-q8-01.png`;
+  
+  // Check if URL is already absolute (starts with http:// or https://)
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // If relative path, prepend baseUrl
+  return `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
+};
+
 export const getServerSideProps: GetServerSideProps<
   { post: PostData; meta: MetaData },
   { slug: string }
@@ -244,6 +257,8 @@ export const getServerSideProps: GetServerSideProps<
     }));
 
     const { _id, title, content, meta, slug, tags, thumbnail, category, createdAt } = post;
+    const baseUrl = "https://q8design.vn";
+    const thumbnailUrl = normalizeImageUrl(thumbnail?.url, baseUrl);
 
     const metaData = {
       title: `${title} | Q8 Design`,
@@ -251,21 +266,21 @@ export const getServerSideProps: GetServerSideProps<
       keywords: `${title}, thiết kế nội thất, Q8 Design, kiến trúc, trang trí nhà, xu hướng thiết kế, ${category}`,
       robots: "index, follow",
       author: "Q8 Design",
-      canonical: `https://q8design.vn/bai-viet/${slug}`,
+      canonical: `${baseUrl}/bai-viet/${slug}`,
       og: {
         title: `${title} | Q8 Design`,
         description: meta || `Đọc bài viết "${title}" về thiết kế nội thất từ chuyên gia Q8 Design`,
         type: "article",
-        image: thumbnail?.url || "https://q8design.vn/logo-q8-01.png",
+        image: thumbnailUrl,
         imageWidth: "1200",
         imageHeight: "630",
-        url: `https://q8design.vn/bai-viet/${slug}`,
+        url: `${baseUrl}/bai-viet/${slug}`,
       },
       twitter: {
         card: "summary_large_image",
         title: `${title} | Q8 Design`,
         description: meta || `Đọc bài viết "${title}" về thiết kế nội thất từ chuyên gia Q8 Design`,
-        image: thumbnail?.url || "https://q8design.vn/logo-q8-01.png",
+        image: thumbnailUrl,
       },
     };
 

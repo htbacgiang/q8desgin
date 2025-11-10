@@ -22,47 +22,70 @@ export default function ProjectDetail({ meta, project, jsonLd }) {
   );
 }
 
-// Helper functions
-const createMeta = (project, baseUrl, slug) => ({
-  title: `${project.title} - Q8 Design`,
-  description: project.description || `Chi tiết dự án ${project.title} của Q8 Design`,
-  keywords: `${project.title}, ${project.tags?.join(', ') || ''}, thiết kế kiến trúc, Q8 Design`,
-  robots: "index, follow",
-  author: "Q8 Design",
-  canonical: `${baseUrl}/du-an/${slug}`,
-  og: {
-    title: `${project.title} - Q8 Design`,
-    description: project.description || `Chi tiết dự án ${project.title}`,
-    type: "article",
-    image: project.mainImage || project.image ? `${baseUrl}${project.mainImage || project.image}` : `${baseUrl}/logo-q8.png`,
-    imageWidth: "1200",
-    imageHeight: "630",
-    url: `${baseUrl}/du-an/${slug}`,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `${project.title} - Q8 Design`,
-    description: project.description || `Chi tiết dự án ${project.title}`,
-    image: project.mainImage || project.image ? `${baseUrl}${project.mainImage || project.image}` : `${baseUrl}/logo-q8.png`,
-  },
-});
+// Helper function to normalize image URL
+const normalizeImageUrl = (imageUrl, baseUrl) => {
+  if (!imageUrl) return `${baseUrl}/logo-q8.png`;
+  
+  // Check if URL is already absolute (starts with http:// or https://)
+  if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    return imageUrl;
+  }
+  
+  // If relative path, prepend baseUrl
+  return `${baseUrl}${imageUrl.startsWith('/') ? imageUrl : `/${imageUrl}`}`;
+};
 
-const createJsonLd = (project, baseUrl, slug) => ({
-  "@context": "https://schema.org",
-  "@type": "CreativeWork",
-  "name": project.title,
-  "description": project.description || `Chi tiết dự án ${project.title}`,
-  "url": `${baseUrl}/du-an/${slug}`,
-  "image": project.mainImage || project.image || `${baseUrl}/logo-q8.png`,
-  "creator": {
-    "@type": "Organization",
-    "name": "Q8 Design",
-    "url": baseUrl,
-  },
-  "datePublished": project.year || "2024",
-  "keywords": project.tags?.join(', ') || "thiết kế kiến trúc, Q8 Design",
-  "inLanguage": "vi-VN",
-});
+// Helper functions
+const createMeta = (project, baseUrl, slug) => {
+  const imageUrl = project.mainImage || project.image;
+  const normalizedImage = normalizeImageUrl(imageUrl, baseUrl);
+  
+  return {
+    title: `${project.title} - Q8 Design`,
+    description: project.description || `Chi tiết dự án ${project.title} của Q8 Design`,
+    keywords: `${project.title}, ${project.tags?.join(', ') || ''}, thiết kế kiến trúc, Q8 Design`,
+    robots: "index, follow",
+    author: "Q8 Design",
+    canonical: `${baseUrl}/du-an/${slug}`,
+    og: {
+      title: `${project.title} - Q8 Design`,
+      description: project.description || `Chi tiết dự án ${project.title}`,
+      type: "article",
+      image: normalizedImage,
+      imageWidth: "1200",
+      imageHeight: "630",
+      url: `${baseUrl}/du-an/${slug}`,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: `${project.title} - Q8 Design`,
+      description: project.description || `Chi tiết dự án ${project.title}`,
+      image: normalizedImage,
+    },
+  };
+};
+
+const createJsonLd = (project, baseUrl, slug) => {
+  const imageUrl = project.mainImage || project.image;
+  const normalizedImage = normalizeImageUrl(imageUrl, baseUrl);
+  
+  return {
+    "@context": "https://schema.org",
+    "@type": "CreativeWork",
+    "name": project.title,
+    "description": project.description || `Chi tiết dự án ${project.title}`,
+    "url": `${baseUrl}/du-an/${slug}`,
+    "image": normalizedImage,
+    "creator": {
+      "@type": "Organization",
+      "name": "Q8 Design",
+      "url": baseUrl,
+    },
+    "datePublished": project.year || "2024",
+    "keywords": project.tags?.join(', ') || "thiết kế kiến trúc, Q8 Design",
+    "inLanguage": "vi-VN",
+  };
+};
 
 export async function getServerSideProps({ params, req }) {
   const { slug } = params;
