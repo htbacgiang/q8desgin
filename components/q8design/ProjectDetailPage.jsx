@@ -437,9 +437,9 @@ export default function ProjectDetailPage({ project }) {
           {/* Project Info Overlay - Centered */}
           <div className="absolute inset-0 flex items-center justify-center p-6 md:p-12">
             <div className="container mx-auto max-w-7xl text-center">
-              <h1 className="text-3xl md:text-5xl  font-bold text-white mb-4">
+              <p className="text-3xl md:text-5xl  font-bold text-white mb-4">
                 {project.title}
-              </h1>
+              </p>
               
               {/* Location and Area Info */}
               <div className="flex flex-wrap items-center justify-center gap-4 md:gap-6 mb-4 text-white/90">
@@ -518,9 +518,9 @@ export default function ProjectDetailPage({ project }) {
             <div className="lg:col-span-2">
               {/* Project Summary */}
               <div className="mb-12">
-                <h2 className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-6">
+                <p className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-6">
                   Tóm tắt dự án
-                </h2>
+                </p>
                 <div 
                   className="relative overflow-hidden transition-all duration-1000 ease-in-out"
                   style={{ maxHeight: showFullSummary ? summaryMaxHeight : 384 }}
@@ -645,9 +645,9 @@ export default function ProjectDetailPage({ project }) {
         <section className="py-20">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
-              <h2 className="text-3xl md:text-4xl font-bold text-q8-primary-900 mb-4">
+              <p className="text-3xl md:text-4xl font-bold text-q8-primary-900 mb-4">
                 Dự án liên quan
-              </h2>
+              </p>
               <p className="text-lg text-q8-primary-600">
                 Khám phá thêm các dự án tương tự khác của Q8 Design
               </p>
