@@ -5,6 +5,8 @@ export const useProjects = (options = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState(null);
+  const [categoryCounts, setCategoryCounts] = useState(null);
+  const [completionCounts, setCompletionCounts] = useState(null);
 
   const {
     category = 'all',
@@ -41,6 +43,8 @@ export const useProjects = (options = {}) => {
         if (data.success) {
           setProjects(data.data.projects);
           setPagination(data.data.pagination);
+          setCategoryCounts(data.data.categories || null);
+          setCompletionCounts(data.data.completion || null);
         } else {
           setError(data.message || 'Lỗi khi tải dữ liệu');
         }
@@ -60,6 +64,8 @@ export const useProjects = (options = {}) => {
     loading,
     error,
     pagination,
+    categoryCounts,
+    completionCounts,
     refetch: () => {
       setLoading(true);
       // Trigger re-fetch by updating a dependency

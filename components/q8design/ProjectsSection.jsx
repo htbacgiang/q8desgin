@@ -32,7 +32,10 @@ export default function ProjectsSection() {
   const { 
     projects: allProjectsFallback = [], 
     loading: fallbackLoading, 
-    error: fallbackError 
+    error: fallbackError,
+    pagination: fallbackPagination,
+    categoryCounts: apiCategoryCounts,
+    completionCounts: apiCompletionCounts
   } = useProjects({
     featured: false,
     limit: 50,
@@ -41,34 +44,66 @@ export default function ProjectsSection() {
     order: 'desc'
   });
 
-  // Use featured projects if available, otherwise fallback to all projects
+  // Keep legacy state update (no harm), but source for rendering will prefer full dataset
   useEffect(() => {
     if (!featuredLoading && featuredProjects.length > 0) {
       setDisplayProjects(featuredProjects);
-    } else if (!featuredLoading && !fallbackLoading && featuredProjects.length === 0) {
+    } 
+    if (!fallbackLoading && allProjectsFallback.length > 0) {
       setDisplayProjects(allProjectsFallback);
     }
   }, [featuredProjects, allProjectsFallback, featuredLoading, fallbackLoading]);
 
-  const allProjects = displayProjects;
+  // Source for rendering: prefer full dataset from API over featured
+  const projectsForView = useMemo(() => {
+    if (!fallbackLoading && allProjectsFallback && allProjectsFallback.length > 0) {
+      return allProjectsFallback;
+    }
+    return featuredProjects || [];
+  }, [allProjectsFallback, featuredProjects, fallbackLoading]);
+
+  const allProjects = projectsForView;
   const loading = featuredLoading || (featuredProjects.length === 0 && fallbackLoading);
   const error = featuredError || (featuredProjects.length === 0 && fallbackError);
 
+  // Build counts from API response when available
+  const countsFromApi = useMemo(() => {
+    const mapCategoryCounts = {};
+    if (apiCategoryCounts && Array.isArray(apiCategoryCounts)) {
+      apiCategoryCounts.forEach(item => {
+        if (item && item._id) {
+          mapCategoryCounts[item._id] = item.count || 0;
+        }
+      });
+    }
+    const mapCompletionCounts = {};
+    if (apiCompletionCounts && Array.isArray(apiCompletionCounts)) {
+      apiCompletionCounts.forEach(item => {
+        if (item && item._id) {
+          mapCompletionCounts[item._id] = item.count || 0;
+        }
+      });
+    }
+    const totalAll = fallbackPagination?.count ?? (allProjectsFallback?.length || 0);
+    return { category: mapCategoryCounts, completion: mapCompletionCounts, totalAll };
+  }, [apiCategoryCounts, apiCompletionCounts, fallbackPagination, allProjectsFallback]);
+
   // Create filter categories from API data
   const filterCategories = [
-    { id: "all", name: "Công trình thực tế", count: allProjects?.length || 0, color: "gray" },
-    { id: "villa", name: "Biệt thự - vila", count: allProjects?.filter(p => p.category === 'villa').length || 0, color: "blue" },
-    { id: "townhouse", name: "Nhà phố", count: allProjects?.filter(p => p.category === 'townhouse').length || 0, color: "purple" },
-    { id: "apartment", name: "Căn hộ", count: allProjects?.filter(p => p.category === 'apartment').length || 0, color: "green" },
-    { id: "commercial", name: "Văn phòng", count: allProjects?.filter(p => p.category === 'commercial').length || 0, color: "orange" }
+    { id: "all", name: "Tất cả dự án", count: countsFromApi.totalAll, color: "gray" },
+    { id: "apartment", name: "Căn hộ", count: countsFromApi.category['apartment'] || 0, color: "green" },
+    { id: "townhouse", name: "Nhà phố", count: countsFromApi.category['townhouse'] || 0, color: "purple" },
+    { id: "villa", name: "Biệt thự - vila", count: countsFromApi.category['villa'] || 0, color: "blue" },
+    { id: "office", name: "Văn phòng", count: countsFromApi.category['office'] || 0, color: "orange" }
   ];
 
-  const filteredProjects = activeFilter === "all" 
-    ? allProjects 
-    : allProjects.filter(project => 
-        project.category && 
-        project.category.toLowerCase() === activeFilter.toLowerCase()
-      );
+  const filteredProjects = useMemo(() => {
+    if (activeFilter === "all") return allProjects;
+    return allProjects.filter(project =>
+      project.category &&
+      project.category.toLowerCase() === activeFilter.toLowerCase()
+    );
+  }, [activeFilter, allProjects]);
 
   const displayProjectsList = filteredProjects.slice(0, 6);
 

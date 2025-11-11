@@ -57,10 +57,16 @@ export default async function handler(req, res) {
         // Get total count for pagination
         const total = await Project.countDocuments(query);
 
-        // Get category counts
+        // Get category counts (across all active projects)
         const categoryCounts = await Project.aggregate([
           { $match: { status: 'active' } },
           { $group: { _id: '$category', count: { $sum: 1 } } }
+        ]);
+
+        // Get completion counts (e.g., 'Hoàn thành', ...)
+        const completionCounts = await Project.aggregate([
+          { $match: { status: 'active' } },
+          { $group: { _id: '$completion', count: { $sum: 1 } } }
         ]);
 
         res.status(200).json({
@@ -73,7 +79,8 @@ export default async function handler(req, res) {
               count: total,
               limit: parseInt(limit)
             },
-            categories: categoryCounts
+            categories: categoryCounts,
+            completion: completionCounts
           }
         });
       } catch (error) {
