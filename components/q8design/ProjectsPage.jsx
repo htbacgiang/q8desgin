@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import SafeImage from "../common/SafeImage";
 import Image from "next/image";
 import Link from "next/link";
 import { 
@@ -170,7 +171,7 @@ export default function ProjectsPage() {
                 <div className="relative w-full aspect-[5/3] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer">
                   {/* Background Image */}
                   <div className="absolute inset-0">
-                    <Image
+                    <SafeImage
                       src={project.image}
                       alt={project.title}
                       fill

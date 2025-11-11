@@ -1,6 +1,6 @@
 "use client";
 import { useState, useMemo, useEffect, useRef } from "react";
-import Image from "next/image";
+import SafeImage from "../common/SafeImage";
 import Link from "next/link";
 import { FaArrowRight, FaPlay, FaCube, FaMapMarkerAlt, FaRuler, FaCog, FaChevronLeft, FaChevronRight } from "react-icons/fa";
 import { useProjects } from "../../hooks/useProjects";
@@ -304,7 +304,7 @@ export default function ProjectsSection() {
                       <div className="relative w-full aspect-[5/3] rounded-xl overflow-hidden shadow-lg cursor-pointer">
                           {/* Background Image */}
                           <div className="absolute inset-0">
-                            <Image
+                            <SafeImage
                               src={project.image}
                               alt={project.title}
                               fill
@@ -417,7 +417,7 @@ export default function ProjectsSection() {
                   <div className="relative w-full aspect-[5/3] rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2 cursor-pointer">
                     {/* Background Image */}
                     <div className="absolute inset-0">
-                      <Image
+                      <SafeImage
                         src={project.image}
                         alt={project.title}
                         fill

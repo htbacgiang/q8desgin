@@ -1,5 +1,6 @@
 import { useState } from "react";
 import Image from "next/image";
+import SafeImage from "../common/SafeImage";
 import Link from "next/link";
 import { 
   FaArrowRight, 
@@ -354,7 +355,7 @@ export default function ApartmentRenovationServicePage() {
             {featuredProjects.slice(0, 2).map((project, index) => (
               <div key={index} className={`bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 ${index % 2 === 0 ? '' : 'md:flex-row-reverse'} flex flex-col md:flex-row`}>
                 <div className="md:w-1/2 relative h-64 md:h-auto min-h-[400px]">
-                  <Image
+                  <SafeImage
                     src={project.image}
                     alt={project.title}
                     fill

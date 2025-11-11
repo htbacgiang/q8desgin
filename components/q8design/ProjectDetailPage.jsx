@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
+import SafeImage from "../common/SafeImage";
 import Link from "next/link";
 import parse from "html-react-parser";
 import Gallery from "react-photo-gallery";
@@ -423,7 +424,7 @@ export default function ProjectDetailPage({ project }) {
       <section className="relative">
         <div className="relative h-screen overflow-hidden">
           {coverImage && (
-            <Image
+            <SafeImage
               src={coverImage}
               alt={project.title}
               fill
