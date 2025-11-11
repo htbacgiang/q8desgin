@@ -313,7 +313,7 @@ export default function CareerPage() {
       <section className="relative h-[60vh] flex items-center justify-center overflow-hidden">
         <div className="absolute inset-0">
           <Image
-            src="/images/nhan-su.jpg"
+            src="/images/doi-ngu-thiet-ke-noi-that-q8design.webp"
             alt="Q8 Design Team"
             fill
             className="object-cover brightness-50"
@@ -323,9 +323,9 @@ export default function CareerPage() {
         </div>
         
         <div className="relative z-10 text-center text-white max-w-6xl mx-auto px-4">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+          <h1 className="text-4xl md:text-5xl font-bold mb-3">
             Kiến tạo giá trị, <br />
-            <span className="text-q8-primary-900">Xây dựng sự nghiệp</span> cùng Q8 Design
+            <span className="">Xây dựng sự nghiệp</span> cùng Q8 Design
           </h1>
           <p className="text-xl text-q8-primary-200 max-w-3xl mx-auto leading-relaxed">
             Tại Q8 Design, chúng tôi không chỉ xây dựng những công trình kiến trúc mà còn 

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import parse from "html-react-parser";
@@ -28,6 +28,29 @@ export default function ProjectDetailPage({ project }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [limitNodeSearch, setLimitNodeSearch] = useState(6);
   const galleryPhotosRef = useRef([]);
+  const [showFullSummary, setShowFullSummary] = useState(false);
+  const [hasMoreSummary, setHasMoreSummary] = useState(false);
+  const summaryContentRef = useRef(null);
+  const [summaryMaxHeight, setSummaryMaxHeight] = useState(0);
+  const rawSummaryHtml = (project?.overview || project?.description || "");
+  const collapsedSummaryHtml = useMemo(() => {
+    if (!rawSummaryHtml) return "";
+    // Try to extract first paragraph
+    const pCloseIdx = rawSummaryHtml.toLowerCase().indexOf("</p>");
+    if (pCloseIdx > 0) {
+      const firstPara = rawSummaryHtml.slice(0, pCloseIdx + 4);
+      // If the first paragraph is too short, include the second one as well
+      const secondEnd = rawSummaryHtml.toLowerCase().indexOf("</p>", pCloseIdx + 4);
+      if (firstPara.replace(/<[^>]*>/g, "").trim().length < 120 && secondEnd > 0) {
+        return rawSummaryHtml.slice(0, secondEnd + 4);
+      }
+      return firstPara;
+    }
+    // Fallback: trim to 300 characters without breaking HTML tags too much
+    const textOnly = rawSummaryHtml.replace(/<[^>]*>/g, "");
+    const trimmed = textOnly.slice(0, 400);
+    return `<p>${trimmed}${textOnly.length > 400 ? "..." : ""}</p>`;
+  }, [rawSummaryHtml]);
 
   // Toggle form visibility
   const toggleForm = useCallback(() => {
@@ -225,6 +248,35 @@ export default function ProjectDetailPage({ project }) {
       }
     }
   }, [project]);
+
+  // Decide if we should show the toggle button
+  useEffect(() => {
+    if (!rawSummaryHtml) {
+      setHasMoreSummary(false);
+      return;
+    }
+    // Compare raw vs collapsed to infer if we have more content
+    const rawTextLen = rawSummaryHtml.replace(/<[^>]*>/g, "").trim().length;
+    const collapsedTextLen = collapsedSummaryHtml.replace(/<[^>]*>/g, "").trim().length;
+    setHasMoreSummary(rawTextLen > collapsedTextLen + 20);
+  }, [rawSummaryHtml, collapsedSummaryHtml]);
+
+  // Measure content height for smooth expand/collapse animation
+  useEffect(() => {
+    const measure = () => {
+      const el = summaryContentRef.current;
+      if (!el) return;
+      // Set to scrollHeight for full content
+      setSummaryMaxHeight(el.scrollHeight);
+    };
+    // Measure after content parsed
+    const t = setTimeout(measure, 50);
+    window.addEventListener('resize', measure);
+    return () => {
+      clearTimeout(t);
+      window.removeEventListener('resize', measure);
+    };
+  }, [showFullSummary, rawSummaryHtml, collapsedSummaryHtml]);
 
   // If no project found, show 404 or redirect
   if (!project) {
@@ -469,9 +521,30 @@ export default function ProjectDetailPage({ project }) {
                 <h2 className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-6">
                   Tóm tắt dự án
                 </h2>
-                <div className="text-q8-primary-700 leading-relaxed text-lg">
-                  {parse(project.overview || project.description || "")}
+                <div 
+                  className="relative overflow-hidden transition-all duration-1000 ease-in-out"
+                  style={{ maxHeight: showFullSummary ? summaryMaxHeight : 384 }}
+                >
+                  <div 
+                    ref={summaryContentRef} 
+                    className={`text-q8-primary-700 leading-relaxed text-lg transition-opacity duration-1000 ease-in-out ${showFullSummary ? 'opacity-100' : 'opacity-100'}`}
+                  >
+                    {parse(showFullSummary ? rawSummaryHtml : collapsedSummaryHtml)}
+                  </div>
+                  {!showFullSummary && hasMoreSummary && (
+                    <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/70 to-transparent transition-opacity duration-1000 ease-in-out" />
+                  )}
                 </div>
+                {hasMoreSummary && (
+                  <div className="mt-4 flex justify-center">
+                    <button
+                      onClick={() => setShowFullSummary((v) => !v)}
+                      className="inline-flex items-center px-6 py-2 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-all duration-300 hover:shadow-md"
+                    >
+                      {showFullSummary ? 'Thu gọn' : 'Xem đầy đủ bài viết'}
+                    </button>
+                  </div>
+                )}
               </div>
               {/* 3D Viewer - chỉ hiển thị nếu project có 3D */}
               {project.has3D && project.model3D && (
