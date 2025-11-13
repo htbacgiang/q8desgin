@@ -512,14 +512,14 @@ export default function ProjectDetailPage({ project }) {
       )}
 
       {/* Project Details */}
-      <section className="py-6">
+      <section className="md:py-6 py-2">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
             {/* Main Content */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-2 order-2 lg:order-1">
               {/* Project Summary */}
               <div className="mb-12">
-                <p className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-6">
+                <p className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-3">
                   Tóm tắt dự án
                 </p>
                 <div 
@@ -560,7 +560,7 @@ export default function ProjectDetailPage({ project }) {
             </div>
 
             {/* Sidebar */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 order-1 lg:order-2">
               <div className="bg-q8-primary-50 rounded-3xl p-8 sticky top-8">
                 {/* Project Info */}
                 <h3 className="text-xl font-bold text-q8-primary-900 mb-6">Thông tin dự án</h3>

@@ -297,12 +297,12 @@ export default function ServicesPage() {
                       </h3>
                     </div>
                     
-                    <p className="text-q8-primary-700 leading-relaxed mb-6">
+                    <p className="text-q8-primary-700 leading-relaxed mb-6 pl-2">
                       {service.description}
                     </p>
 
                     {/* Services List */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8 pl-2">
                       {service.services.map((item, idx) => (
                         <div key={idx} className="flex items-center space-x-3">
                           <div className={`w-2 h-2 ${colorClass.split(' ')[0]} rounded-full`}></div>

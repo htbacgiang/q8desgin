@@ -315,8 +315,8 @@ export default function ContactPage() {
                   </p>
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <form onSubmit={handleSubmit} className="space-y-6 px-2">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pl-2">
                     <div>
                       <label className="block text-sm font-medium text-q8-primary-700 mb-2">
                         Họ và tên *

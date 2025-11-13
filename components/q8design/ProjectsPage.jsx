@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import SafeImage from "../common/SafeImage";
 import Image from "next/image";
 import Link from "next/link";
@@ -20,6 +20,7 @@ export default function ProjectsPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [searchTerm, setSearchTerm] = useState("");
   const projectsPerPage = 9;
+  const filterBarRef = useRef(null);
 
   // Fetch all projects from API for filtering and pagination
   const { 
@@ -47,11 +48,18 @@ export default function ProjectsPage() {
     setCurrentPage(1);
   }, [activeFilter, searchTerm]);
 
+  // Scroll to filter bar when page changes
+  useEffect(() => {
+    if (filterBarRef.current) {
+      filterBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentPage]);
+
   const featuredProjectsData = (allProjects || []).filter(project => project.featured);
 
   // Create filter categories from API data
   const filterCategories = [
-    { id: "all", name: "Công trình thực tế", count: allProjects?.length || 0, color: "gray" },
+    { id: "all", name: "Tất cả dự án", count: allProjects?.length || 0, color: "gray" },
     { id: "villa", name: "Biệt thự - vila", count: allProjects?.filter(p => p.category === 'villa').length || 0, color: "blue" },
     { id: "townhouse", name: "Nhà phố", count: allProjects?.filter(p => p.category === 'townhouse').length || 0, color: "purple" },
     { id: "apartment", name: "Căn hộ", count: allProjects?.filter(p => p.category === 'apartment').length || 0, color: "green" },
@@ -127,7 +135,7 @@ export default function ProjectsPage() {
         <div className="container mx-auto px-4">
 
           {/* Filter Bar */}
-          <div className="bg-gradient-to-br from-white via-q8-primary-50 to-white rounded-2xl p-6 shadow-lg mb-12 border border-q8-primary-200/50">
+          <div ref={filterBarRef} className="bg-gradient-to-br from-white via-q8-primary-50 to-white rounded-2xl p-6 shadow-lg mb-12 border border-q8-primary-200/50">
             {/* Search Input */}
             <div className="mb-6">
               <div className="relative max-w-md mx-auto">
@@ -268,7 +276,12 @@ export default function ProjectsPage() {
           <div className="flex justify-center items-center mt-12 space-x-2">
             {/* Previous Button */}
             <button
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              onClick={() => {
+                setCurrentPage(Math.max(1, currentPage - 1));
+                if (filterBarRef.current) {
+                  filterBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
               disabled={currentPage === 1}
               className="flex items-center px-4 py-2 text-sm font-medium text-q8-primary-500 bg-white border border-q8-primary-300 rounded-lg hover:bg-q8-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
@@ -290,7 +303,12 @@ export default function ProjectsPage() {
                   return (
                     <button
                       key={page}
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => {
+                        setCurrentPage(page);
+                        if (filterBarRef.current) {
+                          filterBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                      }}
                       className={`px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 ${
                         currentPage === page
                           ? 'bg-gradient-to-r from-q8-primary-900 to-q8-primary-700 text-white shadow-lg transform scale-105'
@@ -312,7 +330,12 @@ export default function ProjectsPage() {
 
             {/* Next Button */}
             <button
-              onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+              onClick={() => {
+                setCurrentPage(Math.min(totalPages, currentPage + 1));
+                if (filterBarRef.current) {
+                  filterBarRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }}
               disabled={currentPage === totalPages}
               className="flex items-center px-4 py-2 text-sm font-medium text-q8-primary-500 bg-white border border-q8-primary-300 rounded-lg hover:bg-q8-primary-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
