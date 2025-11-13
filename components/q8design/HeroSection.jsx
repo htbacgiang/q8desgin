@@ -120,8 +120,8 @@ export default function HeroSection() {
               />
             </div>
 
-            {/* Content - Compact, no background */}
-            <div className="relative z-10 w-full px-4 md:px-6 lg:px-8 xl:px-12 h-full flex items-center justify-center md:items-end md:justify-start pb-0 md:pb-8">
+            {/* Content - Desktop: inside image, Mobile: hidden */}
+            <div className="hidden md:flex relative z-10 w-full px-4 md:px-6 lg:px-8 xl:px-12 h-full items-center justify-center md:items-end md:justify-start pb-0 md:pb-8">
               <div className="max-w-xs sm:max-w-md md:max-w-3xl lg:max-w-5xl text-white/90 text-center md:text-left w-full md:w-auto md:mr-0 md:ml-0">
                 {/* Service Icon */}
                 {/* Main Heading - Smaller text */}
@@ -198,6 +198,52 @@ export default function HeroSection() {
         </div>
         </div>
       </section>
+
+      {/* Mobile Content - Below image */}
+      <div className="md:hidden w-full px-4 pt-3 bg-q8-primary-50 relative overflow-hidden">
+        {/* Background Pattern - same as AboutSection */}
+        <div className="absolute inset-0 opacity-[0.03]">
+          <div className="absolute top-0 left-0 w-full h-full" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23121212' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+          }}></div>
+        </div>
+        
+        {/* Gradient Overlay - same as AboutSection */}
+        <div className="absolute inset-0 bg-gradient-to-br from-q8-primary-50/50 via-transparent to-q8-primary-100/30"></div>
+        
+        <div className="relative z-10">
+          {slides.map((slide, index) => (
+            <div
+              key={slide.id}
+              className={`transition-all duration-500 ${
+                index === currentSlide ? 'opacity-100 block' : 'opacity-0 hidden'
+              }`}
+            >
+              {/* Main Heading */}
+              <div className="text-xl font-bold text-gray-900 leading-tight text-center mb-2">
+                <span className="uppercase">
+                  <span className="inline">Q8 Design</span>
+                  <span className="inline ml-1">{slide.title}</span>
+                </span>
+                <span className="block mt-1 text-gray-700 text-base">
+                  {slide.subtitle}
+                </span>
+              </div>
+
+              {/* CTA Button */}
+              <div className="flex justify-center items-center mt-4">
+                <button
+                  onClick={() => handleCTAClick(slide)}
+                  className="group inline-flex items-center justify-center px-6 py-3 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-all duration-300 transform hover:scale-105  border border-q8-primary-600/20 w-fit text-sm"
+                >
+                  <span>{slide.cta}</span>
+                  <FaArrowRight className="ml-2 transition-transform group-hover:translate-x-1 text-sm" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
 
       {/* Registration Form Modal */}
