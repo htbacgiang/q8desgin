@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { FC, useEffect, useState, useRef } from "react";
 import { useEditor, EditorContent, getMarkRange, Range } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -24,6 +24,8 @@ const Editor: FC<Props> = ({ content, onChange }): JSX.Element => {
   const [showGallery, setShowGallery] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<{ src: string }[]>([]);
+  const isInternalUpdateRef = useRef(false);
+  const previousContentRef = useRef<string>("");
 
   const fetchImages = async () => {
     const { data } = await axios("/api/image");
@@ -86,7 +88,15 @@ const Editor: FC<Props> = ({ content, onChange }): JSX.Element => {
     },
     content: content, // Set initial content
     onUpdate: ({ editor }) => {
-      onChange(editor.getHTML()); // Update parent on content change
+      // Mark this as internal update to prevent sync loop
+      isInternalUpdateRef.current = true;
+      const newContent = editor.getHTML();
+      previousContentRef.current = newContent;
+      onChange(newContent); // Update parent on content change
+      // Reset flag after a short delay
+      setTimeout(() => {
+        isInternalUpdateRef.current = false;
+      }, 0);
     },
   });
 
@@ -110,7 +120,46 @@ const Editor: FC<Props> = ({ content, onChange }): JSX.Element => {
 
   useEffect(() => {
     if (editor) {
-      editor.commands.setContent(content); // Sync content if it changes externally
+      // Only sync content if:
+      // 1. It's not an internal update (user typing)
+      // 2. Content is different from current editor content
+      // 3. Content is different from previous synced content
+      const currentContent = editor.getHTML();
+      
+      // Skip if this is an internal update (user is typing)
+      if (isInternalUpdateRef.current) {
+        return;
+      }
+      
+      // Only update if content actually changed and is different from editor content
+      if (currentContent !== content && content !== previousContentRef.current) {
+        // This is an external update (e.g., from parent component reset or initial load)
+        // If editor is focused, don't update to avoid interrupting user
+        if (editor.isFocused) {
+          // User is actively editing, don't sync external changes
+          return;
+        }
+        
+        // Save current selection before updating content
+        const { from, to } = editor.state.selection;
+        
+        // Update content without emitting update event
+        editor.commands.setContent(content, false);
+        previousContentRef.current = content;
+        
+        // Restore selection
+        setTimeout(() => {
+          if (editor && !editor.isDestroyed) {
+            const docSize = editor.state.doc.content.size;
+            const safeFrom = Math.min(from, docSize);
+            const safeTo = Math.min(to, docSize);
+            editor.commands.setTextSelection({ from: safeFrom, to: safeTo });
+          }
+        }, 0);
+      } else if (currentContent === content) {
+        // Content matches, update previousContentRef to prevent unnecessary updates
+        previousContentRef.current = content;
+      }
     }
   }, [content, editor]);
 
