@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { FaLightbulb, FaHandshake, FaCog, FaCheckCircle, FaQuoteLeft, FaAward, FaUsers, FaRocket } from "react-icons/fa";
+import { FaLightbulb, FaHandshake, FaCog, FaCheckCircle, FaQuoteLeft, FaAward, FaUsers, FaRocket, FaFacebook, FaLinkedin, FaInstagram, FaTwitter, FaYoutube, FaTiktok } from "react-icons/fa";
 
 export default function AboutPage() {
   const coreValues = [
@@ -74,7 +74,12 @@ export default function AboutPage() {
       experience: "10 năm kinh nghiệm",
       education: "Kỹ sư Xây dựng - Đại học Kiến trúc Hà Nội",
       image: "/images/hoang-quoc-huu.jpg",
-      description: "Chuyên gia hàng đầu về thiết kế kiến trúc và nội thất, tốt nghiệp loại xuất sắc Đại học Kiến trúc Hà Nội."
+      description: "Chuyên gia hàng đầu về thiết kế kiến trúc và nội thất, tốt nghiệp loại xuất sắc Đại học Kiến trúc Hà Nội.",
+      social: {
+        facebook: "https://facebook.com/huuhoangq8",
+        linkedin: "https://www.linkedin.com",
+
+      }
     },
     {
       name: "Hương Nguyễn ", 
@@ -82,7 +87,12 @@ export default function AboutPage() {
       experience: "8 năm kinh nghiệm",
       education: "Đại học Kiến trúc Hà Nội",
       image: "/images/huong-nguyen.png",
-      description: "Chuyên sâu về thiết kế nội thất cao cấp, từng tham gia nhiều dự án biệt thự và penthouse."
+      description: "Chuyên sâu về thiết kế nội thất cao cấp, từng tham gia nhiều dự án biệt thự và penthouse.",
+      social: {
+        facebook: "https://facebook.com/huonghen2402",
+        linkedin: "https://www.linkedin.com//",
+
+      }
     },
     {
       name: "Mạnh Cường",
@@ -90,16 +100,24 @@ export default function AboutPage() {
       experience: "5 năm kinh nghiệm",
       education: "Đại học Kiến trúc Hà Nội",
       image: "/images/manh-cuong.jpg",
-      description: "Chuyên gia thiết kế nội thất, từng tham gia nhiều dự án biệt thự và penthouse."
-    },
+      description: "Chuyên gia thiết kế nội thất, từng tham gia nhiều dự án biệt thự và penthouse.",
+      social: {
+        facebook: "https://facebook.com/manhcuong1309",
+        linkedin: "https://www.linkedin.com//",
 
+      }
+    },
     {
       name: "Ngô Quang Trường",
       position: "Trưởng phòng Marketing",
       experience: "8 năm kinh nghiệm",
       education: "Thạc sĩ QTKD - Học viện Công nghệ Bưu chính Viễn thông",
       image: "/images/ngo-quang-truong.jpg",
-      description: "Chuyên gia tư vấn và chăm sóc khách hàng, hiểu rõ nhu cầu và mong muốn của từng gia đình."
+      description: "Chuyên gia tư vấn và chăm sóc khách hàng, hiểu rõ nhu cầu và mong muốn của từng gia đình.",
+      social: {
+        facebook: "https://www.facebook.com/www.truongnq.vn/",
+        linkedin: "https://www.linkedin.com/in/truongnq-vn/",
+      }
     }
   ];
 
@@ -303,7 +321,79 @@ export default function AboutPage() {
                   <p className="text-q8-primary-700 font-medium mb-1">{member.position}</p>
                   <p className="text-sm text-q8-primary-500 mb-2">{member.experience}</p>
                   <p className="text-sm text-q8-primary-600 font-medium mb-3">{member.education}</p>
-                  <p className="text-q8-primary-600 text-sm leading-relaxed">{member.description}</p>
+                  <p className="text-q8-primary-600 text-sm leading-relaxed mb-4">{member.description}</p>
+                  
+                  {/* Social Links */}
+                  {member.social && Object.keys(member.social).length > 0 && (
+                    <div className="flex items-center space-x-3 pt-4 border-t border-gray-200">
+                      {member.social.facebook && (
+                        <a
+                          href={member.social.facebook}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-blue-600 transition-colors"
+                          title="Facebook"
+                        >
+                          <FaFacebook className="w-5 h-5" />
+                        </a>
+                      )}
+                      {member.social.linkedin && (
+                        <a
+                          href={member.social.linkedin}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-blue-700 transition-colors"
+                          title="LinkedIn"
+                        >
+                          <FaLinkedin className="w-5 h-5" />
+                        </a>
+                      )}
+                      {member.social.instagram && (
+                        <a
+                          href={member.social.instagram}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-pink-600 transition-colors"
+                          title="Instagram"
+                        >
+                          <FaInstagram className="w-5 h-5" />
+                        </a>
+                      )}
+                      {member.social.twitter && (
+                        <a
+                          href={member.social.twitter}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-blue-400 transition-colors"
+                          title="Twitter"
+                        >
+                          <FaTwitter className="w-5 h-5" />
+                        </a>
+                      )}
+                      {member.social.youtube && (
+                        <a
+                          href={member.social.youtube}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-red-600 transition-colors"
+                          title="YouTube"
+                        >
+                          <FaYoutube className="w-5 h-5" />
+                        </a>
+                      )}
+                      {member.social.tiktok && (
+                        <a
+                          href={member.social.tiktok}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-gray-600 hover:text-black transition-colors"
+                          title="TikTok"
+                        >
+                          <FaTiktok className="w-5 h-5" />
+                        </a>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

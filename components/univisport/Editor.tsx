@@ -11,6 +11,7 @@ import Color from "@tiptap/extension-color";
 import TextAlign from "@tiptap/extension-text-align";
 import ToolBar from "../editor/ToolBar";
 import EditLink from "../editor/Link/EditLink";
+import EditImage from "../editor/Image/EditImage";
 import GalleryModal, { ImageSelectionResult } from "../editor/GalleryModal";
 import axios from "axios";
 
@@ -69,6 +70,25 @@ const Editor: FC<Props> = ({ content, onChange }): JSX.Element => {
       TipTapImage.configure({
         HTMLAttributes: {
           class: "mx-auto",
+        },
+        allowBase64: true,
+      }).extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            'data-show-caption': {
+              default: 'true',
+              parseHTML: element => element.getAttribute('data-show-caption'),
+              renderHTML: attributes => {
+                if (!attributes['data-show-caption']) {
+                  return {};
+                }
+                return {
+                  'data-show-caption': attributes['data-show-caption'],
+                };
+              },
+            },
+          };
         },
       }),
     ],
@@ -165,17 +185,28 @@ const Editor: FC<Props> = ({ content, onChange }): JSX.Element => {
 
   return (
     <>
-      <div className="p-3 dark:bg-slate-900 border-b-2 transition">
-        <div className="sticky top-0 z-10 bg-white dark:bg-slate-900 text-gray-800 dark:text-white">
+      <div className="border border-gray-300 dark:border-gray-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900 transition">
+        {/* Fixed Toolbar */}
+        <div className="sticky top-0 z-20 bg-white dark:bg-slate-900 border-b border-gray-200 dark:border-gray-700">
           <ToolBar
             editor={editor}
             onOpenImageClick={() => setShowGallery(true)}
           />
-          <div className="h-[1px] w-full bg-secondary-dark dark:bg-secondary-light my-3" />
         </div>
 
-        {editor ? <EditLink editor={editor} /> : null}
-        <EditorContent editor={editor} className="min-h-[300px] prose max-w-full mx-auto" />
+        {/* Scrollable Content Area */}
+        <div className="overflow-y-auto max-h-[700px] p-4">
+          {editor ? (
+            <>
+              <EditLink editor={editor} />
+              <EditImage editor={editor} />
+            </>
+          ) : null}
+          <EditorContent 
+            editor={editor} 
+            className="min-h-[300px] prose max-w-full mx-auto focus:outline-none" 
+          />
+        </div>
       </div>
 
       <GalleryModal

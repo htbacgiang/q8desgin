@@ -1033,14 +1033,22 @@ html, body {
 .blog h2 strong {
   font-weight: 500 !important;
   font-size: 1.2em !important;
-  margin-top: 0px !important;
+  margin-top: 5px !important;
   margin-bottom: 5px !important;
+  line-height: 1.5rem !important;
+
+ }
+ .blog img{
+  margin-bottom: 10px !important;
+  margin-top: 10px !important;
+
  }
  .blog h2  {
   font-weight: 500 !important;
   font-size: 1.2em !important;
   margin-top: 0px !important;
   margin-bottom: 5px !important;
+  line-height: 1.5rem !important;
  }
  .blog h3 {
   font-size: 1.1em !important;
@@ -1057,6 +1065,35 @@ html, body {
   margin-top: 0px !important;
   margin-bottom: 0px !important;
  }
+
+/* Editor paragraph spacing - tăng khoảng cách giữa các đoạn trong editor */
+.prose p {
+  margin-top: 1em !important;
+  margin-bottom: 1em !important;
+  line-height: 1.75 !important;
+}
+
+.prose p:first-child {
+  margin-top: 0 !important;
+}
+
+.prose p:last-child {
+  margin-bottom: 0 !important;
+}
+
+/* Đảm bảo khoảng cách cho editor content */
+.ProseMirror p {
+  margin-top: 1em !important;
+  margin-bottom: 1em !important;
+}
+
+.ProseMirror p:first-child {
+  margin-top: 0 !important;
+}
+
+.ProseMirror p:last-child {
+  margin-bottom: 0 !important;
+}
  .blog a{
   font-weight: 400 !important;
   font-style: italic !important;

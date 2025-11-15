@@ -3,20 +3,22 @@ import { BsBoxArrowInUpRight } from "react-icons/bs";
 import Button from "../ToolBar/Button";
 
 interface Props {
-  onSubmit(url: string, alt?: string): void;
+  onSubmit(url: string, alt?: string, showCaption?: boolean): void;
 }
 
 const EmbedImage: FC<Props> = ({ onSubmit }): JSX.Element => {
   const [url, setUrl] = useState("");
   const [alt, setAlt] = useState("");
+  const [showCaption, setShowCaption] = useState(true); // Mặc định hiển thị caption
   const [visible, setVisible] = useState(false);
 
   const handleSubmit = () => {
     if (!url.trim()) return hideForm();
 
-    onSubmit(url, alt || "");
+    onSubmit(url, alt || "", showCaption);
     setUrl("");
     setAlt("");
+    setShowCaption(true); // Reset về mặc định
     hideForm();
   };
 
@@ -44,6 +46,13 @@ const EmbedImage: FC<Props> = ({ onSubmit }): JSX.Element => {
               placeholder="URL ảnh (https://...)"
               value={url}
               onChange={({ target }) => setUrl(target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit();
+                }
+              }}
             />
             <input
               type="text"
@@ -51,16 +60,44 @@ const EmbedImage: FC<Props> = ({ onSubmit }): JSX.Element => {
               placeholder="Mô tả ảnh (tùy chọn)"
               value={alt}
               onChange={({ target }) => setAlt(target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit();
+                }
+              }}
             />
+            <label className="flex items-center space-x-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={showCaption}
+                onChange={({ target }) => setShowCaption(target.checked)}
+                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <span className="text-sm text-gray-700 dark:text-gray-300">
+                Hiển thị tên ảnh bên dưới
+              </span>
+            </label>
             <div className="flex space-x-2">
               <button
-                onClick={handleSubmit}
-                className="bg-action p-2 text-primary rounded text-sm font-medium hover:bg-action/90 transition"
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleSubmit();
+                }}
+                className="bg-blue-600 hover:bg-blue-700 p-2 text-white rounded text-sm font-medium transition"
               >
                 Chèn ảnh
               </button>
               <button
-                onClick={hideForm}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  hideForm();
+                }}
                 className="bg-gray-200 dark:bg-gray-600 p-2 text-gray-700 dark:text-gray-300 rounded text-sm font-medium hover:bg-gray-300 dark:hover:bg-gray-500 transition"
               >
                 Hủy

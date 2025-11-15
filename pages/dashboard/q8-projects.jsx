@@ -16,7 +16,7 @@ export default function Q8ProjectsDashboard() {
     const fetchProjects = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/projects');
+        const response = await fetch('/api/projects?limit=1000');
         const data = await response.json();
         
         if (data.success && data.data) {
@@ -85,7 +85,7 @@ export default function Q8ProjectsDashboard() {
       if (result.success) {
         toast.success('Xóa dự án thành công!');
         // Refresh projects list
-        const fetchResponse = await fetch('/api/projects');
+        const fetchResponse = await fetch('/api/projects?limit=1000');
         const data = await fetchResponse.json();
         if (data.success && data.data) {
           setProjects(data.data.projects || []);

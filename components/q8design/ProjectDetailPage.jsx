@@ -294,6 +294,32 @@ export default function ProjectDetailPage({ project }) {
     );
   }
 
+  // Transform function for html-react-parser to wrap images with figure and caption
+  const transformImage = (domNode) => {
+    if (domNode.name === 'img') {
+      const alt = domNode.attribs?.alt || '';
+      const src = domNode.attribs?.src || '';
+      const className = domNode.attribs?.class || '';
+      const showCaption = domNode.attribs?.['data-show-caption'] !== 'false'; // Mặc định true nếu không có attribute
+      
+      return (
+        <figure className="my-6">
+          <img 
+            src={src} 
+            alt={alt} 
+            className={className}
+            style={{ width: '100%', height: 'auto' }}
+          />
+          {alt && showCaption && (
+            <figcaption className="text-center text-sm text-gray-600 dark:text-gray-400 mt-2 italic">
+              {alt}
+            </figcaption>
+          )}
+        </figure>
+      );
+    }
+  };
+
   // Related projects will be passed as prop from getServerSideProps
   const relatedProjects = project?.relatedProjects || [];
 
@@ -528,9 +554,11 @@ export default function ProjectDetailPage({ project }) {
                 >
                   <div 
                     ref={summaryContentRef} 
-                    className={`text-q8-primary-700 leading-relaxed text-lg transition-opacity duration-1000 ease-in-out ${showFullSummary ? 'opacity-100' : 'opacity-100'}`}
+                    className={`text-q8-primary-700 blog  leading-relaxed text-lg transition-opacity duration-1000 ease-in-out ${showFullSummary ? 'opacity-100' : 'opacity-100'}`}
                   >
-                    {parse(showFullSummary ? rawSummaryHtml : collapsedSummaryHtml)}
+                    {parse(showFullSummary ? rawSummaryHtml : collapsedSummaryHtml, {
+                      replace: transformImage
+                    })}
                   </div>
                   {!showFullSummary && hasMoreSummary && (
                     <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/70 to-transparent transition-opacity duration-1000 ease-in-out" />

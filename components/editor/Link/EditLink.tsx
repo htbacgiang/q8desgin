@@ -58,16 +58,37 @@ const EditLink: FC<Props> = ({ editor }): JSX.Element => {
         initialState={getInitialState()}
       />
       {!showEditForm && (
-        <div className="rounded bg-primary dark:bg-primary-dark text-primary-dark dark:text-primary shadow-secondary-dark shadow-md p-3 flex items-center space-x-6 z-50">
-          <button onClick={handleOnLinkOpenClick}>
+        <div className="rounded bg-white dark:bg-gray-800 text-primary-dark dark:text-primary shadow-secondary-dark shadow-md p-3 flex items-center space-x-6 z-50">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleOnLinkOpenClick();
+            }}
+          >
             <BsBoxArrowUpRight />
           </button>
 
-          <button onClick={handleLinkEditClick}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleLinkEditClick();
+            }}
+          >
             <BsPencilSquare />
           </button>
 
-          <button onClick={handleUnlinkClick}>
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              handleUnlinkClick();
+            }}
+          >
             <BiUnlink />
           </button>
         </div>

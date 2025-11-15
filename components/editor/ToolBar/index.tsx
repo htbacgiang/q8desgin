@@ -22,9 +22,9 @@ import DropdownOptions from "../../common/DropdownOptions";
 import InsertLink from "../Link/InsertLink";
 import { linkOption } from "../Link/LinkForm";
 import EmbedYoutube from "./EmbedYoutube";
+import EmbedFacebookReels from "./EmbedFacebookReels";
 import EmbedImage from "./EmbedImage";
 import FindReplace from "../FindReplace";
-import FileAttachment from "../FileAttachment";
 
 interface Props {
   editor: Editor | null;
@@ -100,10 +100,60 @@ const ToolBar: FC<Props> = ({
     editor.chain().focus().setYoutubeVideo({ src: url }).run();
   };
 
-  const handleEmbedImage = (url: string, alt?: string) => {
+  const handleEmbedFacebookReels = (url: string) => {
     if (!editor) return;
     
-    editor.chain().focus().setImage({ src: url, alt: alt || "" }).run();
+    // Normalize Facebook Reels URL
+    let normalizedUrl = url.trim();
+    
+    // Ensure URL is a valid Facebook URL
+    if (!normalizedUrl.includes('facebook.com')) {
+      alert('Vui lòng nhập URL Facebook Reels hợp lệ');
+      return;
+    }
+    
+    // Convert Facebook Reels URL to embed format
+    // Facebook Reels URL format: 
+    // - https://www.facebook.com/reel/{id}
+    // - https://www.facebook.com/{username}/reels/{id}
+    // - https://fb.watch/{id}
+    // Embed format: https://www.facebook.com/plugins/video.php?href={encoded_url}
+    const encodedUrl = encodeURIComponent(normalizedUrl);
+    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${encodedUrl}&show_text=false&width=500&height=281`;
+    
+    // Insert iframe HTML with responsive design
+    const iframeHtml = `<div class="facebook-reel-embed" style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; margin: 20px 0; background: #000;">
+      <iframe 
+        src="${embedUrl}" 
+        style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: none;" 
+        scrolling="no" 
+        allowtransparency="true" 
+        allow="encrypted-media; autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share"
+        allowFullScreen="true"
+        loading="lazy">
+      </iframe>
+    </div>`;
+    
+    editor.chain().focus().insertContent(iframeHtml).run();
+  };
+
+  const handleEmbedImage = (url: string, alt?: string, showCaption: boolean = true) => {
+    if (!editor) return;
+    
+    // Thêm data attribute để lưu thông tin hiển thị caption
+    const imageAttrs: any = { 
+      src: url, 
+      alt: alt || "",
+    };
+    
+    // Thêm data attribute để đánh dấu có hiển thị caption hay không
+    if (showCaption && alt) {
+      imageAttrs['data-show-caption'] = 'true';
+    } else {
+      imageAttrs['data-show-caption'] = 'false';
+    }
+    
+    editor.chain().focus().setImage(imageAttrs).run();
   };
 
   const Head = () => {
@@ -240,6 +290,7 @@ const ToolBar: FC<Props> = ({
         <div className="h-4 w-[1px] bg-gray-300 dark:bg-gray-600 mx-1" />
         
         <EmbedYoutube onSubmit={handleEmbedYoutube} />
+        <EmbedFacebookReels onSubmit={handleEmbedFacebookReels} />
         
         <EmbedImage onSubmit={handleEmbedImage} />
 
@@ -248,7 +299,6 @@ const ToolBar: FC<Props> = ({
         </Button>
 
         <FindReplace editor={editor} />
-        <FileAttachment editor={editor} />
       </div>
     </div>
   );

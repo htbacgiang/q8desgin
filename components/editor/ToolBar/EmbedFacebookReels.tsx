@@ -1,12 +1,12 @@
 import { FC, useState } from "react";
-import { BsYoutube } from "react-icons/bs";
+import { BsFacebook } from "react-icons/bs";
 import Button from "../ToolBar/Button";
 
 interface Props {
   onSubmit(link: string): void;
 }
 
-const EmbedYoutube: FC<Props> = ({ onSubmit }): JSX.Element => {
+const EmbedFacebookReels: FC<Props> = ({ onSubmit }): JSX.Element => {
   const [url, setUrl] = useState("");
   const [visible, setVisible] = useState(false);
 
@@ -29,7 +29,7 @@ const EmbedYoutube: FC<Props> = ({ onSubmit }): JSX.Element => {
       className="relative"
     >
       <Button onClick={visible ? hideForm : showForm}>
-        <BsYoutube />
+        <BsFacebook />
       </Button>
 
       {visible && (
@@ -39,7 +39,7 @@ const EmbedYoutube: FC<Props> = ({ onSubmit }): JSX.Element => {
               autoFocus
               type="text"
               className="bg-white dark:bg-gray-800 rounded border-2 border-secondary-dark focus:border-primary-dark dark:focus:border-primary transition p-2 text-primary-dark dark:text-primary"
-              placeholder="https://youtube.com"
+              placeholder="https://www.facebook.com/reel/..."
               value={url}
               onChange={({ target }) => setUrl(target.value)}
               onKeyDown={(e) => {
@@ -68,4 +68,5 @@ const EmbedYoutube: FC<Props> = ({ onSubmit }): JSX.Element => {
   );
 };
 
-export default EmbedYoutube;
+export default EmbedFacebookReels;
+
