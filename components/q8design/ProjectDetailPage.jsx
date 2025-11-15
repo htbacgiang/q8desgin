@@ -33,6 +33,10 @@ export default function ProjectDetailPage({ project }) {
   const [hasMoreSummary, setHasMoreSummary] = useState(false);
   const summaryContentRef = useRef(null);
   const [summaryMaxHeight, setSummaryMaxHeight] = useState(0);
+  const [collapsedMaxHeight, setCollapsedMaxHeight] = useState(600);
+  const summaryToggleRef = useRef(null);
+  const summaryTitleRef = useRef(null);
+  const summarySectionRef = useRef(null);
   const rawSummaryHtml = (project?.overview || project?.description || "");
   const collapsedSummaryHtml = useMemo(() => {
     if (!rawSummaryHtml) return "";
@@ -269,11 +273,19 @@ export default function ProjectDetailPage({ project }) {
     const measure = () => {
       const el = summaryContentRef.current;
       if (!el) return;
-      // Set to scrollHeight for full content
-      setSummaryMaxHeight(el.scrollHeight);
+      
+      if (showFullSummary) {
+        // Measure full content height
+        setSummaryMaxHeight(el.scrollHeight);
+      } else {
+        // Measure collapsed content height
+        const collapsedHeight = el.scrollHeight;
+        // Set collapsed max height to actual content height + some padding, but cap at reasonable max
+        setCollapsedMaxHeight(Math.min(collapsedHeight + 50, 1500)); // Allow up to 1500px for collapsed content
+      }
     };
-    // Measure after content parsed
-    const t = setTimeout(measure, 50);
+    // Measure after content parsed and rendered
+    const t = setTimeout(measure, 100);
     window.addEventListener('resize', measure);
     return () => {
       clearTimeout(t);
@@ -563,17 +575,17 @@ export default function ProjectDetailPage({ project }) {
             {/* Main Content */}
             <div className="lg:col-span-2 order-2 lg:order-1">
               {/* Project Summary */}
-              <div className="mb-12">
-                <p className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-3">
+              <div ref={summarySectionRef} className="mb-12">
+                <p ref={summaryTitleRef} className="text-2xl md:text-3xl font-bold text-q8-primary-900 mb-3">
                   Tóm tắt dự án
                 </p>
                 <div 
-                  className="relative overflow-hidden transition-all duration-1000 ease-in-out"
-                  style={{ maxHeight: showFullSummary ? summaryMaxHeight : 384 }}
+                  className="relative transition-all duration-1000 ease-in-out"
+                  style={{ maxHeight: showFullSummary ? 'none' : collapsedMaxHeight, overflow: showFullSummary ? 'visible' : 'hidden' }}
                 >
                   <div 
                     ref={summaryContentRef} 
-                    className={`text-q8-primary-700 blog  leading-relaxed text-lg transition-opacity duration-1000 ease-in-out ${showFullSummary ? 'opacity-100' : 'opacity-100'}`}
+                    className="text-q8-primary-700 blog leading-relaxed text-lg transition-opacity duration-1000 ease-in-out"
                   >
                     {parse(showFullSummary ? rawSummaryHtml : collapsedSummaryHtml, {
                       replace: transformImage
@@ -583,13 +595,15 @@ export default function ProjectDetailPage({ project }) {
                     <div className="pointer-events-none absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-white via-white/70 to-transparent transition-opacity duration-1000 ease-in-out" />
                   )}
                 </div>
-                {hasMoreSummary && (
-                  <div className="mt-4 flex justify-center">
+                {hasMoreSummary && !showFullSummary && (
+                  <div className="mt-4 flex justify-center" ref={summaryToggleRef}>
                     <button
-                      onClick={() => setShowFullSummary((v) => !v)}
+                      onClick={() => {
+                        setShowFullSummary(true);
+                      }}
                       className="inline-flex items-center px-6 py-2 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-all duration-300 hover:shadow-md"
                     >
-                      {showFullSummary ? 'Thu gọn' : 'Xem đầy đủ bài viết'}
+                      Xem đầy đủ bài viết
                     </button>
                   </div>
                 )}
@@ -672,13 +686,13 @@ export default function ProjectDetailPage({ project }) {
 
                 {/* Action Buttons */}
                 <div className="space-y-3">
-                  <Link
-                    href="/lien-he"
+                  <button
+                    onClick={toggleForm}
                     className="w-full bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold py-3 px-6 rounded-full text-center transition-colors duration-300 flex items-center justify-center"
                   >
                     Tư vấn dự án tương tự
                     <FaArrowRight className="ml-2" />
-                  </Link>
+                  </button>
 
 
                 </div>
