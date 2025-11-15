@@ -8,7 +8,7 @@ export default function Home({ posts = [], meta = {} }) {
     "@type": "Organization",
     "name": "Q8 Design",
     "url": "https://q8design.vn",
-    "logo": "https://q8design.com/logo-q8.png",
+    "logo": "https://q8design.vn/logo-q8.png",
     "telephone": "+84-98-811-68-28",
     "email": "info@q8design.vn",
     "address": {
@@ -26,7 +26,7 @@ export default function Home({ posts = [], meta = {} }) {
       "areaServed": "VN",
       "availableLanguage": "Vietnamese"
     },
-    "sameAs": ["https://www.facebook.com/q8designvn"],
+    "sameAs": ["https://www.facebook.com/Q8designvn"],
     "description":
     "Q8 Design là đơn vị thiết kế và thi công kiến trúc, nội thất uy tín tại Hà Nội và các tỉnh lân cận. Chúng tôi kiến tạo không gian sống và kinh doanh đẳng cấp, khác biệt cho Biệt thự, Villa và Chung cư.",
   };
