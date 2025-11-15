@@ -171,35 +171,20 @@ export default function ProjectDetailPage({ project }) {
 
   // State to track galleryPhotos length for triggering calculation
   const [galleryPhotosLength, setGalleryPhotosLength] = useState(0);
+  const hasCalculatedRef = useRef(false);
 
   // Calculate targetRowHeight to limit max photos per row (2 on mobile, 6 on desktop)
-  // Using ref to access galleryPhotos length
+  // Calculate once and keep it stable to prevent "shaking" effect
   useEffect(() => {
     const photos = galleryPhotosRef.current;
-    if (photos.length === 0) return;
+    if (photos.length === 0 || hasCalculatedRef.current) return;
 
     const calculateTargetRowHeight = () => {
       const isMobile = window.innerWidth < 768; // md breakpoint
       const maxPhotosPerRow = isMobile ? 2 : 6;
       
-      if (!galleryContainerRef.current) {
-        // Fallback calculation if ref not available
-        const containerWidth = Math.min(window.innerWidth - 64, 1200);
-        const margin = 4 * 2; // margin on both sides
-        const padding = 8 * 2; // padding on both sides
-        const totalSpacing = (maxPhotosPerRow - 1) * margin + maxPhotosPerRow * padding;
-        const availableWidth = containerWidth - totalSpacing;
-        const minPhotoWidth = availableWidth / maxPhotosPerRow;
-        // Calculate height for landscape photos (16:9 ratio)
-        const calculatedHeight = (minPhotoWidth * 9) / 16;
-        // On mobile, calculate exact height for 2 photos per row, then add 50% buffer
-        // On desktop, add 30% buffer to ensure we don't exceed 6 photos per row
-        const buffer = isMobile ? 2.5 : 1.3; // Very large buffer on mobile to force exactly 2 photos
-        setTargetRowHeight(Math.max(350, Math.round(calculatedHeight * buffer)));
-        return;
-      }
-      
-      const containerWidth = galleryContainerRef.current.offsetWidth || Math.min(window.innerWidth - 64, 1200);
+      // Use a fixed calculation based on typical container width
+      const containerWidth = galleryContainerRef.current?.offsetWidth || Math.min(window.innerWidth - 64, 1200);
       const margin = 4 * 2; // margin on both sides
       const padding = 8 * 2; // padding on both sides
       const totalSpacing = (maxPhotosPerRow - 1) * margin + maxPhotosPerRow * padding;
@@ -209,24 +194,36 @@ export default function ProjectDetailPage({ project }) {
       // Calculate height for landscape photos (16:9 ratio)
       const calculatedHeight = (minPhotoWidth * 9) / 16;
       
-      // On mobile, calculate exact height for 2 photos per row, then add 50% buffer
-      // On desktop, add 30% buffer to ensure we don't exceed 6 photos per row
-      // Higher targetRowHeight = larger photos = fewer photos per row
+      // Use a stable buffer to ensure consistent sizing
       const buffer = isMobile ? 2.5 : 1.3;
-      setTargetRowHeight(Math.max(350, Math.round(calculatedHeight * buffer)));
+      const newHeight = Math.max(400, Math.round(calculatedHeight * buffer));
+      
+      // Set once and don't recalculate unless window is resized significantly
+      setTargetRowHeight(newHeight);
       
       // Update limitNodeSearch based on screen size
       setLimitNodeSearch(isMobile ? 2 : 6);
+      
+      hasCalculatedRef.current = true;
     };
 
-    // Calculate after a short delay to ensure container is rendered
-    const timeoutId = setTimeout(calculateTargetRowHeight, 100);
+    // Calculate after container is rendered
+    const timeoutId = setTimeout(calculateTargetRowHeight, 500);
     
-    // Recalculate on window resize with debounce
+    // Only recalculate on significant window resize (more than 200px difference)
+    let lastWidth = window.innerWidth;
     let resizeTimeout;
     const handleResize = () => {
       clearTimeout(resizeTimeout);
-      resizeTimeout = setTimeout(calculateTargetRowHeight, 150);
+      resizeTimeout = setTimeout(() => {
+        const currentWidth = window.innerWidth;
+        // Only recalculate if width changed significantly
+        if (Math.abs(currentWidth - lastWidth) > 200) {
+          hasCalculatedRef.current = false;
+          lastWidth = currentWidth;
+          calculateTargetRowHeight();
+        }
+      }, 500);
     };
     
     window.addEventListener('resize', handleResize);
@@ -235,7 +232,12 @@ export default function ProjectDetailPage({ project }) {
       clearTimeout(timeoutId);
       clearTimeout(resizeTimeout);
     };
-  }, [galleryPhotosLength]); // Trigger when galleryPhotos length changes
+  }, [galleryPhotosLength]); // Only trigger when gallery length changes
+
+  // Reset calculation flag when project changes
+  useEffect(() => {
+    hasCalculatedRef.current = false;
+  }, [project]);
 
   // Update galleryPhotosLength state when project changes
   // This will trigger the targetRowHeight calculation
@@ -371,66 +373,69 @@ export default function ProjectDetailPage({ project }) {
 
   // Convert gallery to react-photo-gallery format
   // Use width/height from gallery if available and valid, otherwise calculate from aspectRatio
-  const galleryPhotos = normalizedGallery.map((img) => {
-    let width, height;
-    
-    // Check if width and height are valid numbers (not 0, not null, not undefined)
-    const hasValidWidth = img.width != null && img.width !== 0 && !isNaN(Number(img.width));
-    const hasValidHeight = img.height != null && img.height !== 0 && !isNaN(Number(img.height));
-    
-    // Calculate expected width/height based on aspectRatio
-    let expectedWidth, expectedHeight;
-      switch (img.aspectRatio) {
-        case 'square':
-        expectedWidth = 1;
-        expectedHeight = 1;
-          break;
-        case 'portrait':
-        expectedWidth = 3;
-        expectedHeight = 4;
-          break;
-        case 'landscape-3-4':
-        expectedWidth = 4;
-        expectedHeight = 3;
-          break;
-        case 'landscape':
-        default:
-        expectedWidth = 16;
-        expectedHeight = 9;
-          break;
-    }
-    
-    // If width and height are already defined in gallery item, use them
-    // But verify they match the aspectRatio (with some tolerance)
-    if (hasValidWidth && hasValidHeight) {
-      const actualWidth = Number(img.width);
-      const actualHeight = Number(img.height);
-      const actualRatio = actualWidth / actualHeight;
-      const expectedRatio = expectedWidth / expectedHeight;
+  // Memoize to prevent recalculation on every render
+  const galleryPhotos = useMemo(() => {
+    return normalizedGallery.map((img) => {
+      let width, height;
       
-      // If the ratio matches (within 5% tolerance), use the provided values
-      // Otherwise, use the expected values from aspectRatio
-      if (Math.abs(actualRatio - expectedRatio) / expectedRatio < 0.05) {
-        width = actualWidth;
-        height = actualHeight;
-      } else {
-        // Ratio doesn't match, use expected values
-        width = expectedWidth;
-        height = expectedHeight;
-      }
-    } else {
-      // No valid width/height, use aspectRatio calculation
-      width = expectedWidth;
-      height = expectedHeight;
-    }
-    
-    return {
-      src: img.src,
-      width: width,
-      height: height,
-      alt: `${project.title} - ${img.src}`
-    };
-  });
+      // Check if width and height are valid numbers (not 0, not null, not undefined)
+      const hasValidWidth = img.width != null && img.width !== 0 && !isNaN(Number(img.width));
+      const hasValidHeight = img.height != null && img.height !== 0 && !isNaN(Number(img.height));
+      
+      // Calculate expected width/height based on aspectRatio
+      let expectedWidth, expectedHeight;
+        switch (img.aspectRatio) {
+          case 'square':
+          expectedWidth = 1;
+          expectedHeight = 1;
+            break;
+          case 'portrait':
+          expectedWidth = 3;
+          expectedHeight = 4;
+            break;
+          case 'landscape-3-4':
+          expectedWidth = 4;
+          expectedHeight = 3;
+            break;
+          case 'landscape':
+          default:
+          expectedWidth = 16;
+          expectedHeight = 9;
+            break;
+        }
+        
+        // If width and height are already defined in gallery item, use them
+        // But verify they match the aspectRatio (with some tolerance)
+        if (hasValidWidth && hasValidHeight) {
+          const actualWidth = Number(img.width);
+          const actualHeight = Number(img.height);
+          const actualRatio = actualWidth / actualHeight;
+          const expectedRatio = expectedWidth / expectedHeight;
+          
+          // If the ratio matches (within 5% tolerance), use the provided values
+          // Otherwise, use the expected values from aspectRatio
+          if (Math.abs(actualRatio - expectedRatio) / expectedRatio < 0.05) {
+            width = actualWidth;
+            height = actualHeight;
+          } else {
+            // Ratio doesn't match, use expected values
+            width = expectedWidth;
+            height = expectedHeight;
+          }
+        } else {
+          // No valid width/height, use aspectRatio calculation
+          width = expectedWidth;
+          height = expectedHeight;
+        }
+        
+        return {
+          src: img.src,
+          width: width,
+          height: height,
+          alt: `${project.title} - ${img.src}`
+        };
+    });
+  }, [normalizedGallery, project.title]);
 
   // Debug: Log final gallery photos format
   if (process.env.NODE_ENV === 'development' && galleryPhotos.length > 0) {
@@ -438,7 +443,9 @@ export default function ProjectDetailPage({ project }) {
   }
 
   // Update ref with latest galleryPhotos
-  galleryPhotosRef.current = galleryPhotos;
+  useEffect(() => {
+    galleryPhotosRef.current = galleryPhotos;
+  }, [galleryPhotos]);
   
   // Update state when galleryPhotos is calculated (this runs after render, but useEffect is already defined above)
   // The useEffect above will trigger recalculation when galleryPhotosLength changes
@@ -522,15 +529,25 @@ export default function ProjectDetailPage({ project }) {
             {/* Desktop: React Photo Gallery with justified layout */}
             <div className="hidden md:block container mx-auto" ref={galleryContainerRef}>
               <div className="flex justify-center">
-                <Gallery
-                  photos={galleryPhotos}
-                  direction="row"
-                  margin={4}
-                  targetRowHeight={targetRowHeight}
-                  imagePadding={8}
-                  limitNodeSearch={limitNodeSearch}
-                  onClick={openLightbox}
-                />
+                <div 
+                  style={{ 
+                    minHeight: `${Math.max(targetRowHeight, 400)}px`, 
+                    width: '100%',
+                    position: 'relative'
+                  }}
+                >
+                  {targetRowHeight > 0 && (
+                    <Gallery
+                      photos={galleryPhotos}
+                      direction="row"
+                      margin={4}
+                      targetRowHeight={Math.max(targetRowHeight, 400)}
+                      imagePadding={8}
+                      limitNodeSearch={limitNodeSearch}
+                      onClick={openLightbox}
+                    />
+                  )}
+                </div>
               </div>
             </div>
           </div>
