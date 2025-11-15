@@ -47,26 +47,30 @@ export default async function handler(req, res) {
         // Calculate pagination
         const skip = (parseInt(page) - 1) * parseInt(limit);
 
-        // Get projects
-        const projects = await Project.find(query)
-          .sort(sortObj)
-          .skip(skip)
-          .limit(parseInt(limit))
-          .select('-__v');
-
-        // Get total count for pagination
-        const total = await Project.countDocuments(query);
-
-        // Get category counts (across all active projects)
-        const categoryCounts = await Project.aggregate([
-          { $match: { status: 'active' } },
-          { $group: { _id: '$category', count: { $sum: 1 } } }
-        ]);
-
-        // Get completion counts (e.g., 'Hoàn thành', ...)
-        const completionCounts = await Project.aggregate([
-          { $match: { status: 'active' } },
-          { $group: { _id: '$completion', count: { $sum: 1 } } }
+        // Run queries in parallel for better performance
+        const [projects, total, categoryCounts, completionCounts] = await Promise.all([
+          // Get projects
+          Project.find(query)
+            .sort(sortObj)
+            .skip(skip)
+            .limit(parseInt(limit))
+            .select('-__v')
+            .lean(), // Use lean() for faster queries when not modifying documents
+          
+          // Get total count for pagination
+          Project.countDocuments(query),
+          
+          // Get category counts (across all active projects)
+          Project.aggregate([
+            { $match: { status: 'active' } },
+            { $group: { _id: '$category', count: { $sum: 1 } } }
+          ]),
+          
+          // Get completion counts (e.g., 'Hoàn thành', ...)
+          Project.aggregate([
+            { $match: { status: 'active' } },
+            { $group: { _id: '$completion', count: { $sum: 1 } } }
+          ])
         ]);
 
         res.status(200).json({
