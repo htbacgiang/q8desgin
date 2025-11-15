@@ -281,21 +281,6 @@ export default function ProjectDetailPage({ project }) {
     };
   }, [showFullSummary, rawSummaryHtml, collapsedSummaryHtml]);
 
-  // If no project found, show 404 or redirect
-  if (!project) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-4xl font-bold text-q8-primary-900 mb-4">Không tìm thấy dự án</p>
-          <p className="text-q8-primary-600 mb-8">Dự án bạn tìm kiếm không tồn tại hoặc đã được gỡ bỏ.</p>
-          <Link href="/du-an" className="inline-flex items-center px-6 py-3 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-colors">
-            Quay lại danh sách dự án
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   // Transform function for html-react-parser to wrap images with figure and caption
   const transformImage = (domNode) => {
     if (domNode.name === 'img') {
@@ -333,7 +318,6 @@ export default function ProjectDetailPage({ project }) {
     commercial: 'Văn phòng'
   };
 
-
   // Helper function to detect aspect ratio
   const getAspectRatio = (imageUrl) => {
     if (!imageUrl) return 'landscape';
@@ -347,16 +331,15 @@ export default function ProjectDetailPage({ project }) {
     return 'landscape';
   };
 
-
   // Get cover image (mainImage or first gallery image)
-  const coverImage = project.mainImage || project.image || (project.gallery && project.gallery.length > 0 
+  const coverImage = project?.mainImage || project?.image || (project?.gallery && project.gallery.length > 0 
     ? (typeof project.gallery[0] === 'string' ? project.gallery[0] : (project.gallery[0].src || project.gallery[0].url || project.gallery[0]))
     : null);
   
-  const normalizedGallery = normalizeGallery(project.gallery);
+  const normalizedGallery = project ? normalizeGallery(project.gallery) : [];
 
   // Debug: Log gallery data to check what we're getting from API
-  if (process.env.NODE_ENV === 'development') {
+  if (process.env.NODE_ENV === 'development' && project) {
     console.log('Raw project.gallery:', project.gallery);
     console.log('Normalized Gallery:', normalizedGallery);
     if (normalizedGallery.length > 0) {
@@ -375,6 +358,10 @@ export default function ProjectDetailPage({ project }) {
   // Use width/height from gallery if available and valid, otherwise calculate from aspectRatio
   // Memoize to prevent recalculation on every render
   const galleryPhotos = useMemo(() => {
+    if (!project || !normalizedGallery || normalizedGallery.length === 0) {
+      return [];
+    }
+    
     return normalizedGallery.map((img) => {
       let width, height;
       
@@ -432,10 +419,10 @@ export default function ProjectDetailPage({ project }) {
           src: img.src,
           width: width,
           height: height,
-          alt: `${project.title} - ${img.src}`
+          alt: `${project?.title || ''} - ${img.src}`
         };
     });
-  }, [normalizedGallery, project.title]);
+  }, [normalizedGallery, project?.title]);
 
   // Debug: Log final gallery photos format
   if (process.env.NODE_ENV === 'development' && galleryPhotos.length > 0) {
@@ -446,6 +433,21 @@ export default function ProjectDetailPage({ project }) {
   useEffect(() => {
     galleryPhotosRef.current = galleryPhotos;
   }, [galleryPhotos]);
+
+  // If no project found, show 404 or redirect
+  if (!project) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-4xl font-bold text-q8-primary-900 mb-4">Không tìm thấy dự án</p>
+          <p className="text-q8-primary-600 mb-8">Dự án bạn tìm kiếm không tồn tại hoặc đã được gỡ bỏ.</p>
+          <Link href="/du-an" className="inline-flex items-center px-6 py-3 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-colors">
+            Quay lại danh sách dự án
+          </Link>
+        </div>
+      </div>
+    );
+  }
   
   // Update state when galleryPhotos is calculated (this runs after render, but useEffect is already defined above)
   // The useEffect above will trigger recalculation when galleryPhotosLength changes
