@@ -99,7 +99,7 @@ export default function AboutPage() {
       position: "Trưởng phòng Thiết kế", 
       experience: "5 năm kinh nghiệm",
       education: "Đại học Kiến trúc Hà Nội",
-      image: "/images/manh-cuong.jpg",
+      image: "/images/manh-cuong.png",
       description: "Chuyên gia thiết kế nội thất, từng tham gia nhiều dự án biệt thự và penthouse.",
       social: {
         facebook: "https://facebook.com/manhcuong1309",
