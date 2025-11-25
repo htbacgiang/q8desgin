@@ -10,6 +10,10 @@ import TipTapImage from "@tiptap/extension-image";
 import TextStyle from "@tiptap/extension-text-style";
 import Color from "@tiptap/extension-color";
 import TextAlign from "@tiptap/extension-text-align";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
 
 import ToolBar from "./ToolBar";
 import EditLink from "./Link/EditLink";
@@ -127,6 +131,12 @@ const Editor: FC<Props> = ({
           class: "mx-auto",
         },
       }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     
     editorProps: {

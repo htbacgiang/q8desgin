@@ -25,6 +25,7 @@ import EmbedYoutube from "./EmbedYoutube";
 import EmbedFacebookReels from "./EmbedFacebookReels";
 import EmbedImage from "./EmbedImage";
 import FindReplace from "../FindReplace";
+import InsertTable from "./InsertTable";
 
 interface Props {
   editor: Editor | null;
@@ -283,6 +284,8 @@ const ToolBar: FC<Props> = ({
         >
           <BsListUl />
         </Button>
+
+        <InsertTable editor={editor} />
       </div>
 
       {/* Media & Tools Group */}

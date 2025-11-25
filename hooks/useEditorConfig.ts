@@ -6,6 +6,10 @@ import Placeholder from "@tiptap/extension-placeholder";
 import Link from "@tiptap/extension-link";
 import Youtube from "@tiptap/extension-youtube";
 import TipTapImage from "@tiptap/extension-image";
+import Table from "@tiptap/extension-table";
+import TableRow from "@tiptap/extension-table-row";
+import TableHeader from "@tiptap/extension-table-header";
+import TableCell from "@tiptap/extension-table-cell";
 import { useState } from "react";
 
 interface Options {
@@ -42,6 +46,12 @@ const useEditorConfig = (options?: Options) => {
           class: "mx-auto",
         },
       }),
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
     ],
     editorProps: {
       handleClick(view, pos, event) {

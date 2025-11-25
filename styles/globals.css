@@ -4690,6 +4690,18 @@ video[paused] {
   margin: 0;
 }
 
+/* Table Caption Styles */
+.ProseMirror .table-caption {
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #374151;
+  font-size: 0.95em;
+}
+
+.dark .ProseMirror .table-caption {
+  color: #e5e7eb;
+}
+
 /* Highlight Styles */
 .ProseMirror mark {
   background-color: #fef08a;
