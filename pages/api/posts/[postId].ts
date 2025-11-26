@@ -21,6 +21,8 @@ const handler: NextApiHandler = async (req, res) => {
       return updatePost(req, res);
     case "DELETE":
       return removePost(req, res);
+    case "POST":
+      return restorePost(req, res);
     default:
       return res.status(404).send("Not found!");
   }
@@ -74,21 +76,20 @@ const removePost: NextApiHandler = async (req, res) => {
     
     console.log("Deleting post - permission granted:", { isAdmin, isOwner });
 
-    // Xóa bài viết
-    await Post.findByIdAndDelete(postId);
+    // Soft delete: Đánh dấu bài viết đã xóa thay vì xóa vĩnh viễn
+    const deletedAt = new Date();
+    post.deletedAt = deletedAt;
+    await post.save();
 
-    // Nếu bài viết có thumbnail, xoá ảnh trên Cloudinary
-    const publicId = post.thumbnail?.public_id;
-    if (publicId) {
-      try {
-        await cloudinary.uploader.destroy(publicId);
-      } catch (cloudinaryError) {
-        console.error("Cloudinary delete error:", cloudinaryError);
-        // Không throw error vì bài viết đã được xóa thành công
-      }
-    }
+    console.log("✅ Post soft deleted:", { 
+      postId: post._id.toString(), 
+      deletedAt: post.deletedAt,
+      deletedAtType: typeof post.deletedAt 
+    });
+
+    // Không xóa ảnh trên Cloudinary để có thể phục hồi sau
     
-    res.json({ removed: true, message: "Đã xóa bài viết thành công!" });
+    res.json({ removed: true, message: "Đã xóa bài viết vào thùng rác!" });
   } catch (error: any) {
     console.error("Delete post error:", error);
     res.status(500).json({ error: error.message || "Internal server error" });
@@ -209,6 +210,62 @@ const updatePost: NextApiHandler = async (req, res) => {
       });
     }
     res.status(500).json({ error: errorMessage });
+  } finally {
+    try {
+      await db.disconnectDb();
+    } catch (disconnectError) {
+      console.error("Database disconnect error:", disconnectError);
+    }
+  }
+};
+
+const restorePost: NextApiHandler = async (req, res) => {
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+  const session = token ? { user: token } : null;
+
+  if (!session || !session.user) {
+    return res.status(401).json({ error: "Bạn cần đăng nhập!" });
+  }
+
+  try {
+    try {
+      await db.connectDb();
+    } catch (dbError) {
+      console.error("Database connection error:", dbError);
+      return res.status(500).json({ error: "Database connection failed" });
+    }
+    
+    const postId = req.query.postId as string;
+    if (!postId) {
+      return res.status(400).json({ error: "Invalid post id" });
+    }
+
+    const post = await Post.findById(postId);
+    if (!post) {
+      return res.status(404).json({ error: "Post not found!" });
+    }
+
+    // Kiểm tra quyền sở hữu - Admin có thể phục hồi mọi bài viết
+    const isAdmin = session.user.role === 'admin';
+    const isOwner = post.author && post.author.toString() === session.user.sub;
+    
+    if (!isAdmin && !isOwner) {
+      return res.status(403).json({ error: "Bạn không có quyền phục hồi bài viết này!" });
+    }
+
+    // Kiểm tra xem bài viết có bị xóa không
+    if (!post.deletedAt) {
+      return res.status(400).json({ error: "Bài viết này chưa bị xóa!" });
+    }
+
+    // Phục hồi bài viết: xóa deletedAt
+    post.deletedAt = undefined;
+    await post.save();
+    
+    res.json({ restored: true, post, message: "Đã phục hồi bài viết thành công!" });
+  } catch (error: any) {
+    console.error("Restore post error:", error);
+    res.status(500).json({ error: error.message || "Internal server error" });
   } finally {
     try {
       await db.disconnectDb();

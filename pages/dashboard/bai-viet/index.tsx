@@ -181,16 +181,28 @@ export const getServerSideProps: GetServerSideProps<{
   try {
     await db.connectDb();
 
-    // Lấy tất cả bài viết bao gồm cả nháp
-    const totalPosts = await Post.countDocuments({});
+    // Lấy tất cả bài viết bao gồm cả nháp, nhưng loại trừ các bài đã xóa
+    // Chỉ lấy bài viết có deletedAt không phải là Date (null, undefined, hoặc không tồn tại)
+    const filter = {
+      $or: [
+        { deletedAt: null },
+        { deletedAt: { $exists: false } },
+        { deletedAt: { $not: { $type: "date" } } }
+      ]
+    };
+    
+    const totalPosts = await Post.countDocuments(filter);
     const totalPages = Math.ceil(totalPosts / limit);
     
-    // Lấy bài viết đầu tiên với limit
-    const posts = await Post.find({})
+    // Lấy bài viết đầu tiên với limit, loại trừ các bài đã xóa
+    const posts = await Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(0)
       .limit(limit)
       .lean();
+    
+    console.log("📋 Dashboard bai-viet - Total posts (not deleted):", totalPosts);
+    console.log("📋 Dashboard bai-viet - Posts found:", posts.length);
 
     const formattedPosts = formatPosts(posts);
 

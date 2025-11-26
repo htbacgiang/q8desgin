@@ -1,5 +1,6 @@
-import { ChangeEventHandler, FC, useEffect, useState, useCallback } from "react";
+import { ChangeEventHandler, FC, useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useEditor, EditorContent, getMarkRange, Range } from "@tiptap/react";
+import { useRouter } from "next/router";
 
 import StarterKit from "@tiptap/starter-kit";
 import Underline from "@tiptap/extension-underline";
@@ -48,6 +49,7 @@ const Editor: FC<Props> = ({
   busy = false,
   onSubmit,
 }): JSX.Element => {
+  const router = useRouter();
   const [selectionRange, setSelectionRange] = useState<Range>();
   const [showGallery, setShowGallery] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -66,6 +68,15 @@ const Editor: FC<Props> = ({
     category:"",
     focusKeyword: "",
   });
+  const [hasContent, setHasContent] = useState(false); // Track if editor has actual content
+  const [contentChanged, setContentChanged] = useState(false); // Track if content has been changed
+  const lastSaveRef = useRef<number>(0); // Track last save time to prevent too frequent saves
+  const contentChangeTimeoutRef = useRef<NodeJS.Timeout | null>(null); // Debounce content change
+  const postRef = useRef(post); // Ref để tránh stale closure trong auto-save
+  const contentChangedRef = useRef(false); // Ref để tránh re-render do contentChanged
+  const hasContentRef = useRef(false); // Ref để tránh re-render do hasContent
+  const postIdRef = useRef<string | undefined>(undefined); // Ref để track post.id và tránh re-render không cần thiết
+  const isDraftRef = useRef<boolean>(true); // Ref để track isDraft và tránh re-render không cần thiết
 
   // Kiểm tra xem có phải đang tạo bài viết mới không
   const isCreatingNewPost = !initialValue?.id;
@@ -102,6 +113,17 @@ const Editor: FC<Props> = ({
 
     setImages([data, ...images]);
   };
+
+  // Cập nhật refs khi state thay đổi
+  useEffect(() => {
+    postRef.current = post;
+    postIdRef.current = post.id;
+  }, [post]);
+  
+  // Cập nhật isDraft ref khi state thay đổi
+  useEffect(() => {
+    isDraftRef.current = isDraft;
+  }, [isDraft]);
 
   const editor = useEditor({
     extensions: [
@@ -157,6 +179,13 @@ const Editor: FC<Props> = ({
     },
   });
 
+  const editorRef = useRef(editor); // Ref để tránh stale closure trong auto-save
+
+  // Cập nhật editor ref
+  useEffect(() => {
+    editorRef.current = editor;
+  }, [editor]);
+
   const handleImageSelection = (result: ImageSelectionResult) => {
     editor
       ?.chain()
@@ -167,17 +196,72 @@ const Editor: FC<Props> = ({
 
     const handleSubmit = () => {
       if (!editor) return;
-      onSubmit({ ...post, content: editor.getHTML(), isDraft, isFeatured });
+      
+      // Validation: Kiểm tra các trường bắt buộc
+      const editorContent = editor.getHTML().trim();
+      const hasActualContent = !!(editorContent && editorContent !== '<p></p>' && editorContent !== '<p><br></p>');
+      
+      // Kiểm tra tiêu đề
+      if (!post.title || post.title.trim() === '') {
+        toast.error("Vui lòng nhập tiêu đề bài viết!");
+        return;
+      }
+      
+      // Kiểm tra nội dung
+      if (!hasActualContent) {
+        toast.error("Vui lòng nhập nội dung bài viết!");
+        return;
+      }
+      
+      // Kiểm tra slug
+      if (!post.slug || post.slug.trim() === '') {
+        toast.error("Vui lòng nhập slug cho bài viết!");
+        return;
+      }
+      
+      // Kiểm tra danh mục
+      if (!post.category || post.category.trim() === '') {
+        toast.error("Vui lòng chọn danh mục cho bài viết!");
+        return;
+      }
+      
+      // Kiểm tra meta description
+      if (!post.meta || post.meta.trim() === '') {
+        toast.error("Vui lòng nhập meta description cho bài viết!");
+        return;
+      }
+      
+      // Từ khóa chính (Focus Keyword) không bắt buộc
+      
+      // Tất cả các trường đã đầy đủ, tiến hành submit
+      onSubmit({ ...post, content: editorContent, isDraft, isFeatured });
     };
 
     const saveDraft = useCallback(async () => {
       if (!editor || !isCreatingNewPost) return;
       
+      // Chỉ lưu nháp khi có ít nhất tiêu đề bài viết
+      if (!post.title || post.title.trim() === '') {
+        return;
+      }
+      
+      // Tránh lưu quá thường xuyên (ít nhất 5 giây giữa các lần lưu)
+      const now = Date.now();
+      if (now - lastSaveRef.current < 5000) {
+        return;
+      }
+      
+      // Nếu đã có tiêu đề, cho phép lưu nháp (kể cả chưa có nội dung)
+      // Logic này áp dụng cho cả manual save và auto-save
+      const editorContent = editor.getHTML().trim();
+      
       setSavingDraft(true);
+      lastSaveRef.current = now;
+      const saveStartTime = now; // Lưu thời gian bắt đầu để dùng trong catch
       try {
         const formData = new FormData();
         formData.append("title", post.title || "Nháp bài viết");
-        formData.append("content", editor.getHTML());
+        formData.append("content", editorContent);
         formData.append("meta", post.meta || "");
         formData.append("slug", post.slug || `draft-${Date.now()}`);
         formData.append("category", post.category || "");
@@ -204,21 +288,38 @@ const Editor: FC<Props> = ({
 
         const { data } = await axios.post("/api/posts/draft", formData);
         
-        // Cập nhật post ID nếu là nháp mới
-        if (!post.id && data.post._id) {
-          setPost(prev => ({ ...prev, id: data.post._id }));
-          setIsDraft(true); // Đảm bảo trạng thái là nháp
+        // Cập nhật post ID nếu là nháp mới - chỉ update khi giá trị thực sự thay đổi
+        if (!postIdRef.current && data.post._id) {
+          postIdRef.current = data.post._id;
+          setPost(prev => {
+            if (prev.id === data.post._id) return prev; // Tránh re-render không cần thiết
+            return { ...prev, id: data.post._id };
+          });
         }
         
-        // Toast thành công
-        toast.success("Nháp bài viết đã được lưu thành công!");
+        // Đảm bảo trạng thái là nháp - chỉ update khi cần thiết
+        if (!isDraftRef.current) {
+          isDraftRef.current = true;
+          setIsDraft(true);
+        }
+        
+        // Reset contentChanged flag sau khi lưu thành công
+        contentChangedRef.current = false;
+        setContentChanged(false);
+        
+        // Toast thành công (chỉ hiển thị khi manual save, không hiển thị khi auto-save)
+        // Không hiển thị toast để tránh làm phiền người dùng
       } catch (error) {
         console.error("Lỗi lưu nháp:", error);
-        toast.error("Có lỗi xảy ra khi lưu nháp bài viết!");
+        // Chỉ hiển thị lỗi khi manual save (thời gian lưu < 1 giây nghĩa là user click)
+        const timeSinceStart = Date.now() - saveStartTime;
+        if (timeSinceStart < 1000) {
+          toast.error("Có lỗi xảy ra khi lưu nháp bài viết!");
+        }
       } finally {
         setSavingDraft(false);
       }
-    }, [editor, post, isCreatingNewPost]);
+    }, [editor, post.title, post.meta, post.slug, post.category, post.tags, post.id, post.thumbnail, isCreatingNewPost]);
 
     const publishDraft = useCallback(async () => {
       if (!post.id) {
@@ -232,36 +333,151 @@ const Editor: FC<Props> = ({
           isDraft: false
         });
         
-        // Cập nhật trạng thái local
-        setIsDraft(false);
+        // Cập nhật trạng thái local - chỉ update khi giá trị thực sự thay đổi
+        if (isDraftRef.current) {
+          isDraftRef.current = false;
+          setIsDraft(false);
+        }
         
         // Toast thành công
         toast.success("Bài viết đã được công khai thành công!");
         
-        // Chuyển hướng sau khi hiển thị toast
-        setTimeout(() => {
-          window.location.href = "/dashboard/bai-viet";
-        }, 1500);
+        // Chuyển hướng ngay lập tức để tránh các state update tiếp theo gây re-render
+        router.push("/dashboard/bai-viet");
       } catch (error: any) {
         console.error("Lỗi công khai bài viết:", error);
         toast.error("Có lỗi xảy ra khi công khai bài viết!");
-      } finally {
         setPublishing(false);
       }
-    }, [post.id]);
+    }, [post.id, router]);
 
-    // Tự động lưu nháp mỗi 30 giây chỉ khi tạo bài viết mới
+    // Track content changes với debounce để tránh re-render liên tục
+    useEffect(() => {
+      if (!editor) return;
+      
+      const handleUpdate = () => {
+        const editorContent = editor.getHTML().trim();
+        const hasActualContent = !!(editorContent && editorContent !== '<p></p>' && editorContent !== '<p><br></p>');
+        
+        // Cập nhật refs trước, sau đó mới update state để tránh re-render không cần thiết
+        hasContentRef.current = hasActualContent;
+        setHasContent(hasActualContent);
+        
+        // Debounce việc set contentChanged để tránh re-render liên tục
+        if (contentChangeTimeoutRef.current) {
+          clearTimeout(contentChangeTimeoutRef.current);
+        }
+        contentChangeTimeoutRef.current = setTimeout(() => {
+          contentChangedRef.current = true;
+          setContentChanged(true);
+        }, 1000); // Chờ 1 giây sau khi ngừng gõ mới đánh dấu là đã thay đổi
+      };
+      
+      editor.on('update', handleUpdate);
+      
+      return () => {
+        editor.off('update', handleUpdate);
+        if (contentChangeTimeoutRef.current) {
+          clearTimeout(contentChangeTimeoutRef.current);
+        }
+      };
+    }, [editor]);
+
+    // Tự động lưu nháp mỗi 30 giây chỉ khi tạo bài viết mới và có tiêu đề và (có nội dung hoặc đã thay đổi)
+    // Sử dụng refs để tránh re-render loop do dependencies thay đổi
     useEffect(() => {
       if (!isCreatingNewPost) return;
       
       const autoSaveInterval = setInterval(() => {
-        if (editor && (post.title || editor.getHTML().trim())) {
-          saveDraft();
+        const currentPost = postRef.current;
+        const currentEditor = editorRef.current;
+        const hasTitle = currentPost.title && currentPost.title.trim() !== '';
+        
+        // Không auto-save nếu đang publishing hoặc đã publish (isDraft = false)
+        // Sử dụng ref thay vì state để tránh re-render
+        if (publishing || !isDraftRef.current) return;
+        
+        // Chỉ auto-save nếu có thay đổi và đã qua ít nhất 30 giây từ lần lưu cuối
+        if (currentEditor && hasTitle) {
+          const editorContent = currentEditor.getHTML().trim();
+          const hasActualContent = !!(editorContent && editorContent !== '<p></p>' && editorContent !== '<p><br></p>');
+          
+          // Sử dụng refs để tránh re-render do dependencies thay đổi
+          if (hasActualContent || contentChangedRef.current || currentPost.id) {
+            const now = Date.now();
+            if (now - lastSaveRef.current >= 30000) {
+              // Gọi saveDraft trực tiếp với current values
+              const performAutoSave = async () => {
+                if (!currentEditor || !hasTitle || publishing) return;
+                
+                const now = Date.now();
+                if (now - lastSaveRef.current < 5000) return;
+                
+                setSavingDraft(true);
+                lastSaveRef.current = now;
+                try {
+                  const formData = new FormData();
+                  formData.append("title", currentPost.title || "Nháp bài viết");
+                  formData.append("content", editorContent);
+                  formData.append("meta", currentPost.meta || "");
+                  formData.append("slug", currentPost.slug || `draft-${Date.now()}`);
+                  formData.append("category", currentPost.category || "");
+                  
+                  let tagsArray: string[] = [];
+                  if (currentPost.tags) {
+                    if (typeof currentPost.tags === 'string') {
+                      tagsArray = currentPost.tags.split(',').filter((tag: string) => tag.trim() !== '');
+                    } else if (Array.isArray(currentPost.tags)) {
+                      tagsArray = (currentPost.tags as any[]).filter((tag: any) => typeof tag === 'string');
+                    }
+                  }
+                  formData.append("tags", JSON.stringify(tagsArray || []));
+                  
+                  if (currentPost.id) {
+                    formData.append("postId", currentPost.id);
+                  }
+                  
+                  if (currentPost.thumbnail instanceof File) {
+                    formData.append("thumbnail", currentPost.thumbnail);
+                  }
+
+                  const { data } = await axios.post("/api/posts/draft", formData);
+                  
+                  // Cập nhật post ID nếu là nháp mới - chỉ update khi giá trị thực sự thay đổi
+                  if (!postIdRef.current && data.post._id) {
+                    postIdRef.current = data.post._id;
+                    // Cập nhật postRef trước để tránh stale closure
+                    postRef.current = { ...postRef.current, id: data.post._id };
+                    setPost(prev => {
+                      if (prev.id === data.post._id) return prev; // Tránh re-render không cần thiết
+                      return { ...prev, id: data.post._id };
+                    });
+                  }
+                  
+                  // Đảm bảo trạng thái là nháp - chỉ update khi cần thiết
+                  if (!isDraftRef.current) {
+                    isDraftRef.current = true;
+                    setIsDraft(true);
+                  }
+                  
+                  // Reset contentChanged flag
+                  contentChangedRef.current = false;
+                  setContentChanged(false);
+                } catch (error) {
+                  console.error("Lỗi auto-save nháp:", error);
+                } finally {
+                  setSavingDraft(false);
+                }
+              };
+              
+              performAutoSave();
+            }
+          }
         }
       }, 30000);
 
       return () => clearInterval(autoSaveInterval);
-    }, [saveDraft, editor, post.title, isCreatingNewPost]);
+    }, [isCreatingNewPost, publishing]); // Sử dụng isDraftRef thay vì isDraft để tránh re-render
 
 
 
@@ -295,11 +511,44 @@ const Editor: FC<Props> = ({
         // Cập nhật trạng thái nháp từ initialValue
         // Nếu đang edit bài viết có sẵn, giữ nguyên trạng thái isDraft từ database
         // Nếu tạo mới (không có id), mặc định là draft
-        setIsDraft(initialValue.isDraft ?? true);
+        const newIsDraft = initialValue.isDraft ?? true;
+        if (isDraftRef.current !== newIsDraft) {
+          isDraftRef.current = newIsDraft;
+          setIsDraft(newIsDraft);
+        }
+        
+        // Cập nhật post ID ref
+        if (postIdRef.current !== initialValue.id) {
+          postIdRef.current = initialValue.id;
+        }
+        
         // Cập nhật trạng thái nổi bật
         setIsFeatured(initialValue.isFeatured ?? false);
+        
+        // Check if initial content exists
+        const content = initialValue.content || '';
+        const hasInitialContent = content.trim() !== '' && 
+          content.trim() !== '<p></p>' && 
+          content.trim() !== '<p><br></p>';
+        hasContentRef.current = hasInitialContent;
+        contentChangedRef.current = false;
+        setHasContent(hasInitialContent);
+        setContentChanged(false); // Reset khi load initial value
+      } else {
+        // Reset states when no initial value
+        hasContentRef.current = false;
+        contentChangedRef.current = false;
+        postIdRef.current = undefined;
+        isDraftRef.current = true;
+        setHasContent(false);
+        setContentChanged(false);
       }
     }, [initialValue, editor]);
+
+    // Memoize button visibility conditions để tránh re-render không cần thiết
+    const showDraftButton = useMemo(() => isCreatingNewPost, [isCreatingNewPost]);
+    // Nút "Công khai" chỉ hiển thị khi chỉnh sửa bài viết nháp đã tồn tại, không hiển thị khi tạo mới
+    const showPublishButton = useMemo(() => !isCreatingNewPost && post.id && isDraft, [isCreatingNewPost, post.id, isDraft]);
 
       return (
       <>
@@ -320,11 +569,11 @@ const Editor: FC<Props> = ({
               />
               <div className="editor-button-container">
                 {/* Draft save button - chỉ hiển thị khi tạo bài viết mới */}
-                {isCreatingNewPost && (
+                {showDraftButton && (
                   <button
                     onClick={saveDraft}
-                    disabled={savingDraft}
-                    className={`editor-button save-draft ${savingDraft ? 'loading' : ''}`}
+                    disabled={savingDraft || !post.title || post.title.trim() === ''}
+                    className={`editor-button save-draft ${savingDraft ? 'loading' : ''} ${(!post.title || post.title.trim() === '') ? 'opacity-50 cursor-not-allowed' : ''}`}
                   >
                     {savingDraft ? (
                       <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,7 +589,7 @@ const Editor: FC<Props> = ({
                 )}
                 
                 {/* Publish draft button - chỉ hiển thị khi tạo bài viết mới, có post.id và bài viết là nháp */}
-                  {isCreatingNewPost && post.id && isDraft && (
+                  {showPublishButton && (
                     <button
                       onClick={publishDraft}
                       disabled={publishing}

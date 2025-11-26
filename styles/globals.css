@@ -1069,11 +1069,16 @@ html, body {
   margin-top: 0px !important;
   margin-bottom: 0px !important;
  }
-
+ .blog li {
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+ }
+ .blog ul {
+  margin-top: 0px !important;
+  margin-bottom: 0px !important;
+ }
 /* Editor paragraph spacing - tăng khoảng cách giữa các đoạn trong editor */
 .prose p {
-  margin-top: 1em !important;
-  margin-bottom: 1em !important;
   line-height: 1.75 !important;
 }
 

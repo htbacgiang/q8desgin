@@ -128,7 +128,6 @@ const DashboardPostCard: React.FC<DashboardPostCardProps> = ({ post, onDeleteCli
             </div>
             <div className={styles.modalBody}>
               <p>Bạn có chắc chắn muốn xóa bài viết <strong>&quot;{post.title}&quot;</strong>?</p>
-              <p className={styles.modalWarning}>Hành động này không thể hoàn tác!</p>
             </div>
             <div className={styles.modalActions}>
               <button 

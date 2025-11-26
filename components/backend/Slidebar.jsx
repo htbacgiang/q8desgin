@@ -20,6 +20,7 @@ import {
   Calendar,
   CalendarDays,
   Building2,
+  Trash2,
 } from "lucide-react";
 
 import { useRouter } from "next/router";
@@ -39,6 +40,11 @@ export default function Sidebar() {
       title: "Thêm bài viết",
       icon: SquarePen,
       href: "/dashboard/them-bai-viet",
+    },
+    {
+      title: "Thùng rác",
+      icon: Trash2,
+      href: "/dashboard/bai-viet/trash",
     },
     {
       title: "Quản lý dự án Q8",

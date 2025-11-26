@@ -13,6 +13,7 @@ export interface PostModelSchema {
   author: ObjectId;
   isDraft: boolean;
   isFeatured?: boolean; // Bài viết nổi bật
+  deletedAt?: Date; // Thời gian xóa (soft delete)
   createdAt: Date;
 }
 
@@ -61,6 +62,10 @@ const PostSchema = new Schema<PostModelSchema>(
     isFeatured: {
       type: Boolean,
       default: false,
+    },
+    deletedAt: {
+      type: Date,
+      default: null,
     },
   },
   {

@@ -75,7 +75,8 @@ const saveDraft: NextApiHandler = async (req, res) => {
         // Cập nhật bài viết
         existingPost.title = title || existingPost.title;
         existingPost.content = content || existingPost.content;
-        existingPost.meta = meta || existingPost.meta;
+        // Đảm bảo meta luôn có giá trị (bắt buộc trong model)
+        existingPost.meta = (meta && meta.trim() !== '') ? meta : (existingPost.meta || "Nháp bài viết - Meta description sẽ được cập nhật sau");
         existingPost.tags = tags;
         existingPost.category = category || existingPost.category;
         existingPost.isDraft = true;
@@ -105,11 +106,14 @@ const saveDraft: NextApiHandler = async (req, res) => {
       }
 
       // Tạo bài viết nháp mới
+      // Đảm bảo meta luôn có giá trị (bắt buộc trong model)
+      const metaValue = meta && meta.trim() !== '' ? meta : "Nháp bài viết - Meta description sẽ được cập nhật sau";
+      
       const newDraft = new Post({
         title: title || "Nháp bài viết",
         content: content || "",
         slug: slug || `draft-${Date.now()}`,
-        meta: meta || "",
+        meta: metaValue,
         tags,
         category: category || "",
         author: session.user.sub,
