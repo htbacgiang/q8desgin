@@ -176,7 +176,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
       </Head>
 
       <DefaultLayout>
-        <div className="pb-12 mt-6 max-w-8xl mx-10">
+        <div className="pb-12 mt-6 max-w-8xl mx-3">
           <div className="flex flex-col gap-4 justify-center w-full">
             {/* Breadcrumb */}
             <div className="flex gap-2 px-4 lg:px-12 uppercase">
@@ -277,7 +277,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                           className="group bg-white rounded-3xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500 transform hover:-translate-y-2"
                         >
                           {/* Post Image */}
-                          <div className="relative h-48 overflow-hidden">
+                          <div className="relative aspect-video overflow-hidden">
                             {post.thumbnail ? (
                               <Image
                                 src={post.thumbnail}
@@ -306,32 +306,20 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
 
                           {/* Post Content */}
                           <div className="p-6">
-                            {/* Tags */}
-                            {post.tags && post.tags.length > 0 && (
-                              <div className="flex flex-wrap gap-2 mb-3">
-                                {post.tags.slice(0, 2).map((tag, idx) => (
-                                  <span key={idx} className="px-2 py-1 bg-q8-primary-100 text-q8-primary-600 text-xs rounded-full flex items-center">
-                                    <FaTag className="mr-1" />
-                                    {tag}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-
                             {/* Title */}
-                            <h3 className="text-lg font-bold text-q8-primary-900 mb-3 leading-tight group-hover:text-q8-primary-700 transition-colors line-clamp-2">
+                            <h3 className="text-lg font-bold text-q8-primary-900  leading-tight group-hover:text-q8-primary-700 transition-colors line-clamp-2">
                               <Link href={`/bai-viet/${post.slug}`}>
                                 {post.title}
                               </Link>
                             </h3>
 
                             {/* Excerpt */}
-                            <p className="text-q8-primary-600 leading-relaxed mb-4 line-clamp-3 text-sm">
+                            <p className="text-q8-primary-600 leading-relaxed  line-clamp-3 text-sm">
                               {trimText(post.meta, 100)}
                             </p>
 
                             {/* Meta Info */}
-                            <div className="flex items-center justify-between text-sm text-q8-primary-500 mb-4">
+                            <div className="flex items-center justify-between text-sm text-q8-primary-500 ">
                               <div className="flex items-center">
                                 <FaCalendarAlt className="mr-1" />
                                 <span>{formatDate(post.createdAt)}</span>

@@ -18,21 +18,21 @@ const MainCategories: FC<Props> = ({ onCategorySelect }) => {
     { key: "Thiết kế nội thất", label: "Thiết kế nội thất" },
     { key: "Thi công xây dựng", label: "Thi công xây dựng" },
     { key: "Cải tạo không gian", label: "Cải tạo không gian" },
-    { key: "Xu hướng thiết kế", label: "Xu hướng thiết kế" },
+    { key: "Xu hướng ", label: "Xu hướng" },
     { key: "Dự án hoàn thành", label: "Dự án hoàn thành" },
     { key: "Tin tức công ty", label: "Tin tức công ty" },
   ];
 
   return (
-    <div className="flex items-center justify-center py-8">
-      <div className="w-full max-w-5xl">
+    <div className="flex items-center justify-center">
+      <div className="w-full max-w-8xl">
         {/* Categories Filter */}
-        <div className="flex flex-wrap justify-center gap-4 mb-2">
+        <div className="flex flex-wrap justify-center gap-2 sm:gap-3 md:gap-4 mb-2">
           {categories.map((category) => (
             <button
               key={category.key || 'all'}
               onClick={() => handleCategoryClick(category.key)}
-              className={`px-6 py-3 rounded-full font-medium transition-all duration-300 border ${
+              className={`px-3 md:px-5 py-3 rounded-full font-medium transition-all duration-300 border ${
                 activeCategory === category.key
                   ? "bg-q8-primary-900 text-white border-q8-primary-900 shadow-lg transform scale-105"
                   : "bg-white hover:bg-q8-primary-50 text-q8-primary-600 hover:text-q8-primary-900 border-q8-primary-200 hover:border-q8-primary-300"
@@ -42,16 +42,7 @@ const MainCategories: FC<Props> = ({ onCategorySelect }) => {
             </button>
           ))}
         </div>
-        
-        {/* Category Description */}
-        <div className="text-center">
-          <p className="text-q8-primary-500 text-sm">
-            {activeCategory 
-              ? `Đang xem danh mục: ${categories.find(c => c.key === activeCategory)?.label}`
-              : "Khám phá kiến thức thiết kế nội thất và kiến trúc từ Q8 Design"
-            }
-          </p>
-        </div>
+
       </div>
     </div>
   );
