@@ -23,7 +23,6 @@ const PostCard: FC<Props> = ({
   busy,
   onDeleteClick,
 }): JSX.Element => {
-  console.log('🔍 PostCard received post:', post);
   const { title, slug, meta, thumbnail, category, createdAt } = post;
   const [showModal, setShowModal] = useState(false);
 

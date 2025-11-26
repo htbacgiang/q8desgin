@@ -12,6 +12,7 @@ export interface PostModelSchema {
   thumbnail?: { url: string; public_id?: string };
   author: ObjectId;
   isDraft: boolean;
+  isFeatured?: boolean; // Bài viết nổi bật
   createdAt: Date;
 }
 
@@ -56,6 +57,10 @@ const PostSchema = new Schema<PostModelSchema>(
     isDraft: {
       type: Boolean,
       default: true,
+    },
+    isFeatured: {
+      type: Boolean,
+      default: false,
     },
   },
   {

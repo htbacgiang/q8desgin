@@ -32,6 +32,7 @@ export interface FinalPost extends SeoResult {
   thumbnail?: File | string;
   focusKeyword: string;
   isDraft?: boolean;
+  isFeatured?: boolean; // Bài viết nổi bật
 }
 
 interface Props {
@@ -53,6 +54,7 @@ const Editor: FC<Props> = ({
   const [savingDraft, setSavingDraft] = useState(false);
   const [publishing, setPublishing] = useState(false);
   const [isDraft, setIsDraft] = useState(true); // Mặc định là nháp khi tạo mới
+  const [isFeatured, setIsFeatured] = useState(false); // Mặc định không phải bài nổi bật
   const [images, setImages] = useState<{ src: string; altText?: string; id?: string }[]>([]);
   const [seoInitialValue, setSeoInitialValue] = useState<SeoResult>();
   const [post, setPost] = useState<FinalPost>({
@@ -165,7 +167,7 @@ const Editor: FC<Props> = ({
 
     const handleSubmit = () => {
       if (!editor) return;
-      onSubmit({ ...post, content: editor.getHTML(), isDraft });
+      onSubmit({ ...post, content: editor.getHTML(), isDraft, isFeatured });
     };
 
     const saveDraft = useCallback(async () => {
@@ -294,6 +296,8 @@ const Editor: FC<Props> = ({
         // Nếu đang edit bài viết có sẵn, giữ nguyên trạng thái isDraft từ database
         // Nếu tạo mới (không có id), mặc định là draft
         setIsDraft(initialValue.isDraft ?? true);
+        // Cập nhật trạng thái nổi bật
+        setIsFeatured(initialValue.isFeatured ?? false);
       }
     }, [initialValue, editor]);
 
@@ -414,6 +418,24 @@ const Editor: FC<Props> = ({
                 editor={editor}
                 initialValue={seoInitialValue}
               />
+            </div>
+            
+            {/* Featured Post Checkbox */}
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isFeatured}
+                  onChange={(e) => setIsFeatured(e.target.checked)}
+                  className="w-5 h-5 text-q8-primary-900 border-gray-300 rounded focus:ring-q8-primary-900 focus:ring-2"
+                />
+                <span className="ml-3 text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Đánh dấu bài viết nổi bật
+                </span>
+                <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  (Chỉ hiển thị tối đa 4 bài nổi bật ở trang chủ)
+                </span>
+              </label>
             </div>
           </div>
         </div>

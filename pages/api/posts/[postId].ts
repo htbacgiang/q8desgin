@@ -143,6 +143,8 @@ const updatePost: NextApiHandler = async (req, res) => {
 
     const { title, content, meta, slug, category } = body;
     const isDraft = (body as any).isDraft;
+    const isFeatured = (body as any).isFeatured === 'true' || (body as any).isFeatured === true;
+    
     post.title = title;
     post.content = content;
     post.meta = meta;
@@ -153,12 +155,17 @@ const updatePost: NextApiHandler = async (req, res) => {
     if (typeof isDraft === 'boolean') {
       post.isDraft = isDraft;
     }
-
-    // Cập nhật thumbnail
-    const thumbnail = files.thumbnail as formidable.File;
-    const thumbnailUrl = (body as any).thumbnail;
     
-    if (thumbnail) {
+    // Cập nhật trạng thái nổi bật nếu có
+    if (typeof isFeatured === 'boolean') {
+      post.isFeatured = isFeatured;
+    }
+
+    // Cập nhật thumbnail: có thể là file mới upload hoặc URL từ gallery
+    const thumbnailFile = files.thumbnail as formidable.File | undefined;
+    const thumbnailUrl = (body as any).thumbnail as string | undefined;
+    
+    if (thumbnailFile) {
       // Kiểm tra cấu hình Cloudinary trước khi upload
       const cloudName = process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
       const apiKey = process.env.CLOUD_API_KEY || process.env.CLOUDINARY_API_KEY;
@@ -174,7 +181,7 @@ const updatePost: NextApiHandler = async (req, res) => {
       try {
         // File upload mới - upload lên cloudinary
         const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-          thumbnail.filepath,
+          thumbnailFile.filepath,
           { folder: process.env.CLOUDINARY_FOLDER || "q8desgin" }
         );
         const oldPublicId = post.thumbnail?.public_id;
@@ -186,9 +193,9 @@ const updatePost: NextApiHandler = async (req, res) => {
           error: cloudinaryError.message || "Lỗi upload ảnh thumbnail. Vui lòng thử lại." 
         });
       }
-    } else if (thumbnailUrl && thumbnailUrl !== post.thumbnail?.url) {
+    } else if (thumbnailUrl && thumbnailUrl.trim() && thumbnailUrl !== post.thumbnail?.url) {
       // URL từ gallery - lưu trực tiếp URL (không cần upload lại)
-      post.thumbnail = { url: thumbnailUrl, public_id: undefined };
+      post.thumbnail = { url: thumbnailUrl.trim() };
     }
 
     await post.save();

@@ -67,7 +67,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideResponse> = async 
     const post = await Post.findOne({ slug });
     if (!post) return { notFound: true };
 
-    const { _id, meta, title, content, thumbnail, tags, category, isDraft } = post;
+    const { _id, meta, title, content, thumbnail, tags, category, isDraft, isFeatured } = post;
 
     return {
       props: {
@@ -82,6 +82,7 @@ export const getServerSideProps: GetServerSideProps<ServerSideResponse> = async 
           meta,
           focusKeyword: "",
           isDraft: isDraft || false, // Nếu bài viết đã publish thì isDraft = false
+          isFeatured: isFeatured || false, // Bài viết nổi bật
         },
       },
     };

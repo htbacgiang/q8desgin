@@ -8,6 +8,7 @@ export interface PostDetail {
   thumbnail?: string;
   createdAt: string;
   isDraft?: boolean;
+  isFeatured?: boolean; // Bài viết nổi bật
 }
 
 export interface IncomingPost {
@@ -16,7 +17,9 @@ export interface IncomingPost {
   slug: string;
   meta: string;
   tags: string;
-  category:string;
+  category: string;
+  thumbnail?: string; // URL từ gallery hoặc file path
+  isFeatured?: string | boolean; // Bài viết nổi bật
 }
 
 export interface UserProfile {

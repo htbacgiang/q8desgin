@@ -16,8 +16,8 @@ export default function BlogSection() {
         const response = await axios.get('/api/posts?includeDrafts=false');
         
         if (response.data && response.data.posts) {
-          // Take first 6 posts for homepage
-          setBlogPosts(response.data.posts.slice(0, 6));
+          // Take first 3 posts for homepage
+          setBlogPosts(response.data.posts.slice(0, 3));
         }
       } catch (error) {
         console.error('Error fetching blog posts:', error);
@@ -31,8 +31,8 @@ export default function BlogSection() {
   }, []);
 
 
-  // Take first 3 posts as featured (from API data)
-  const featuredPosts = blogPosts.slice(0, 3);
+  // Use all blog posts (already limited to 3)
+  const featuredPosts = blogPosts;
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
@@ -168,67 +168,13 @@ export default function BlogSection() {
           ))}
         </div>
 
-        {/* Latest Posts List */}
-        <div className="bg-white rounded-3xl p-8 mb-12">
-          <div className="flex items-center justify-between mb-8">
-            <p className="text-2xl font-bold text-q8-primary-900">Bài viết mới nhất</p>
-            <Link 
-              href="/blog"
-              className="text-q8-primary-700 hover:text-q8-primary-900 font-medium flex items-center group"
-            >
-              Xem tất cả
-              <FaArrowRight className="ml-2 transition-transform group-hover:translate-x-1" />
-            </Link>
-          </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {blogPosts.slice(3, 6).map((post) => (
-            <article key={post.id} className="group">
-              <div className="flex space-x-4">
-                {/* Small Image */}
-                <div className="relative w-20 h-20 flex-shrink-0 rounded-xl overflow-hidden">
-                  {post.thumbnail ? (
-                    <Image
-                      src={post.thumbnail}
-                      alt={post.title}
-                      fill
-                      className="object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                      <span className="text-gray-400 text-xl">📝</span>
-                    </div>
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  {post.category && (
-                    <span className="text-q8-primary-600 text-sm font-medium">{post.category}</span>
-                  )}
-                  <h4 className="font-bold text-q8-primary-900 leading-tight mb-2 line-clamp-2 group-hover:text-q8-primary-700 transition-colors">
-                    <Link href={`/bai-viet/${post.slug}`}>
-                      {post.title}
-                    </Link>
-                  </h4>
-                  <div className="flex items-center text-xs text-q8-primary-500 space-x-3">
-                    <span>{formatDate(post.createdAt)}</span>
-                    <span>Q8 Design Team</span>
-                  </div>
-                </div>
-              </div>
-            </article>
-          ))}
-        </div>
-        </div>
-
         {/* Bottom CTA */}
         <div className="text-center mt-16">
           <Link 
             href="/bai-viet"
             className="inline-flex items-center px-8 py-4 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-colors duration-300 group"
           >
-            Đọc thêm bài viết
+            Xem tất cả bài viết
             <FaArrowRight className="ml-3 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>

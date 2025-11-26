@@ -52,6 +52,7 @@ const saveDraft: NextApiHandler = async (req, res) => {
 
     const { title, content, slug, meta, category } = fields;
     const postId = (fields as any).postId;
+    const isFeatured = (fields as any).isFeatured === 'true' || (fields as any).isFeatured === true;
 
       await db.connectDb();
 
@@ -78,15 +79,25 @@ const saveDraft: NextApiHandler = async (req, res) => {
         existingPost.tags = tags;
         existingPost.category = category || existingPost.category;
         existingPost.isDraft = true;
+        // Cập nhật trạng thái nổi bật
+        if (typeof isFeatured === 'boolean') {
+          existingPost.isFeatured = isFeatured;
+        }
 
-        // Nếu có thumbnail mới, upload lên Cloudinary
-        if (files.thumbnail) {
-          const thumbnail = files.thumbnail as formidable.File;
+        // Xử lý thumbnail: có thể là file mới upload hoặc URL từ gallery
+        const thumbnailFile = files.thumbnail as formidable.File | undefined;
+        const thumbnailUrl = (fields as any).thumbnail as string | undefined;
+        
+        if (thumbnailFile) {
+          // File mới upload - upload lên Cloudinary
           const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-            thumbnail.filepath,
+            thumbnailFile.filepath,
             { folder: process.env.CLOUDINARY_FOLDER || "giangnoitiet" }
           );
           existingPost.thumbnail = { url, public_id };
+        } else if (thumbnailUrl && thumbnailUrl.trim()) {
+          // URL từ gallery - lưu trực tiếp URL (không cần upload lại)
+          existingPost.thumbnail = { url: thumbnailUrl.trim() };
         }
 
         await existingPost.save();
@@ -103,16 +114,23 @@ const saveDraft: NextApiHandler = async (req, res) => {
         category: category || "",
         author: session.user.sub,
         isDraft: true,
+        isFeatured: isFeatured || false,
       });
 
-      // Nếu có thumbnail, upload lên Cloudinary
-      if (files.thumbnail) {
-        const thumbnail = files.thumbnail as formidable.File;
+      // Xử lý thumbnail: có thể là file mới upload hoặc URL từ gallery
+      const thumbnailFile = files.thumbnail as formidable.File | undefined;
+      const thumbnailUrl = (fields as any).thumbnail as string | undefined;
+      
+      if (thumbnailFile) {
+        // File mới upload - upload lên Cloudinary
         const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-          thumbnail.filepath,
-          { folder: "giangnoitiet" }
+          thumbnailFile.filepath,
+          { folder: process.env.CLOUDINARY_FOLDER || "giangnoitiet" }
         );
         newDraft.thumbnail = { url, public_id };
+      } else if (thumbnailUrl && thumbnailUrl.trim()) {
+        // URL từ gallery - lưu trực tiếp URL (không cần upload lại)
+        newDraft.thumbnail = { url: thumbnailUrl.trim() };
       }
 
       await newDraft.save();

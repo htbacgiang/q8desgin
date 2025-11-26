@@ -89,8 +89,13 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
     setSelectedCategory(category);
     setCurrentPage(1); // Reset to first page when filtering
     if (category) {
-      const filtered = posts.filter((post) => post.category === category);
-      console.log(`Filtered posts for "${category}":`, filtered.length);
+      // Filter posts by category (case-insensitive, trim whitespace)
+      const filtered = posts.filter((post) => {
+        const postCategory = post.category?.trim().toLowerCase() || "";
+        const selectedCategoryLower = category.trim().toLowerCase();
+        return postCategory === selectedCategoryLower;
+      });
+      console.log(`Filtered posts for "${category}":`, filtered.length, filtered.map(p => ({ title: p.title, category: p.category })));
       setFilteredPosts(filtered);
     } else {
       console.log("Showing all posts");
@@ -104,13 +109,22 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Featured posts: always first 4 posts from ALL posts (never change, not filtered)
-  const featuredPosts = posts.slice(0, featuredPostsCount);
+  // Featured posts: Chỉ lấy 4 bài viết có isFeatured = true (sắp xếp theo ngày tạo mới nhất)
+  // - Nếu có category được chọn: lấy từ filtered posts
+  // - Nếu không có category: lấy từ tất cả posts
+  const postsToCheck = selectedCategory ? filteredPosts : posts;
+  const featuredPosts = postsToCheck
+    .filter(post => post.isFeatured === true)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()) // Sắp xếp mới nhất trước
+    .slice(0, featuredPostsCount); // Chỉ lấy tối đa 4 bài
   
-  // Recent posts: paginated from filtered posts, starting from post 5
-  const filteredRecentPosts = selectedCategory ? 
-    filteredPosts : // If category selected, use filtered posts
-    filteredPosts.slice(featuredPostsCount); // If no category, skip first 4 posts
+  // Recent posts: Tất cả bài viết không phải featured (hoặc featured nhưng không trong top 4)
+  // Loại bỏ các bài đã hiển thị ở featured
+  const featuredPostIds = new Set(featuredPosts.map(p => p.id));
+  const recentPostsAll = filteredPosts.filter(post => !featuredPostIds.has(post.id));
+  
+  // Pagination cho recent posts
+  const filteredRecentPosts = recentPostsAll;
   
   const recentStartIndex = (currentPage - 1) * recentPostsPerPage;
   const recentEndIndex = recentStartIndex + recentPostsPerPage;
@@ -130,7 +144,8 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
     filteredRecentPosts: filteredRecentPosts.length,
     recentPosts: recentPosts.length,
     currentPage,
-    actualTotalPages
+    actualTotalPages,
+    postsSample: posts.slice(0, 3).map(p => ({ title: p.title, category: p.category, isDraft: p.isDraft }))
   });
 
   return (
@@ -343,11 +358,11 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                 )}
 
                 {/* No Posts Message */}
-                {filteredPosts.length === 0 && (
+                {(filteredPosts.length === 0 || (recentPosts.length === 0 && featuredPosts.length === 0)) && (
                   <div className="text-center py-16 px-4">
                     <div className="w-24 h-24 mx-auto mb-6 bg-q8-primary-100 rounded-full flex items-center justify-center">
                       <span className="text-q8-primary-600 text-4xl">📝</span>
-            </div>
+                    </div>
                     <h3 className="text-2xl font-bold text-q8-primary-900 mb-4">
                       {selectedCategory ? 'Không có bài viết nào trong danh mục này' : 'Chưa có bài viết nào'}
                     </h3>
@@ -363,7 +378,7 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
                         <FaArrowRight className="ml-2" />
                       </button>
                     )}
-          </div>
+                  </div>
                 )}
 
                 {/* Enhanced Pagination */}
@@ -476,8 +491,19 @@ const Blogs: NextPage<Props> = ({ initialPosts = [] }) => {
 
 export const getServerSideProps: GetServerSideProps = async () => {
   try {
-    const raw = await readPostsFromDb();
+    // Fetch posts, exclude drafts (includeDrafts = false by default)
+    const raw = await readPostsFromDb(undefined, undefined, undefined, false);
     const posts = formatPosts(raw) || [];
+    
+    console.log("📊 Server-side: Fetched posts:", {
+      total: posts.length,
+      sample: posts.slice(0, 3).map(p => ({ 
+        title: p.title, 
+        category: p.category, 
+        isDraft: p.isDraft,
+        hasThumbnail: !!p.thumbnail 
+      }))
+    });
     
     return {
       props: {
@@ -485,7 +511,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
       },
     };
   } catch (error) {
-    console.error("Error fetching posts:", error);
+    console.error("❌ Error fetching posts:", error);
     return {
       props: {
         initialPosts: [],

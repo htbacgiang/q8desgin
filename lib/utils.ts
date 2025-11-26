@@ -49,7 +49,14 @@ export const readPostsFromDb = async (
   }
   
   // Tạo filter để loại trừ nháp nếu không includeDrafts
+  // Sử dụng $ne: true để lấy tất cả bài viết không phải draft (bao gồm false, null, undefined)
   const filter = includeDrafts ? {} : { isDraft: { $ne: true } };
+  
+  console.log("🔍 readPostsFromDb:", { 
+    includeDrafts, 
+    filter, 
+    willFetch: includeDrafts ? "all posts" : "non-draft posts only" 
+  });
   
   let query = Post.find(filter)
     .sort({ createdAt: "desc" })
@@ -68,17 +75,45 @@ export const readPostsFromDb = async (
 };
 
 export const formatPosts = (posts: PostModelSchema[]): PostDetail[] => {
-  return posts.map((post) => ({
-    id: post._id.toString(),
-    title: post.title,
-    slug: post.slug,
-    category: post.category,
-    createdAt: post.createdAt.toString(),
-    thumbnail: post.thumbnail?.url || "",
-    meta: post.meta,
-    tags: post.tags,
-    isDraft: post.isDraft || false,
-  }));
+  return posts.map((post) => {
+    // Xử lý thumbnail: có thể là object { url, public_id } hoặc string
+    let thumbnailUrl = "";
+    
+    if (post.thumbnail) {
+      if (typeof post.thumbnail === "string") {
+        // Nếu thumbnail là string (trường hợp cũ hoặc migration)
+        thumbnailUrl = post.thumbnail;
+      } else if (typeof post.thumbnail === "object") {
+        // Nếu thumbnail là object, lấy url property
+        // Có thể là { url: string, public_id?: string } hoặc { url: string }
+        const thumbObj = post.thumbnail as any;
+        if (thumbObj && thumbObj.url && typeof thumbObj.url === "string") {
+          thumbnailUrl = thumbObj.url;
+        } else {
+          // Debug: log để xem cấu trúc thumbnail object
+          console.log("⚠️ Thumbnail object không có url property:", {
+            postId: post._id.toString(),
+            thumbnail: thumbObj,
+            thumbnailType: typeof thumbObj,
+            keys: thumbObj ? Object.keys(thumbObj) : []
+          });
+        }
+      }
+    }
+    
+    return {
+      id: post._id.toString(),
+      title: post.title,
+      slug: post.slug,
+      category: post.category,
+      createdAt: post.createdAt.toString(),
+      thumbnail: thumbnailUrl,
+      meta: post.meta,
+      tags: post.tags,
+      isDraft: post.isDraft || false,
+      isFeatured: post.isFeatured || false, // Bài viết nổi bật
+    };
+  });
 };
 
 const getLikedByOwner = (likes: any[], user: UserProfile) =>

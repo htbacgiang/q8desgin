@@ -51,6 +51,10 @@ const createNewPost: NextApiHandler = async (req, res) => {
       return res.status(400).json({ error: "Slug phải là duy nhất!" });
     }
 
+    // Lấy isFeatured từ body (có thể là string 'true' hoặc boolean)
+    const isFeaturedValue = (body as any).isFeatured;
+    const isFeatured = isFeaturedValue === 'true' || isFeaturedValue === true || isFeaturedValue === '1';
+    
     // Tạo bài viết mới
     const newPost = new Post({
       title,
@@ -61,11 +65,15 @@ const createNewPost: NextApiHandler = async (req, res) => {
       category,
       author: session.user.sub,
       isDraft: false, // Bài viết được đăng sẽ không phải là nháp
+      isFeatured: isFeatured || false, // Bài viết nổi bật
     });
 
-    // Nếu có thumbnail, upload lên Cloudinary
-    if (files.thumbnail) {
-      // Kiểm tra cấu hình Cloudinary trước khi upload
+    // Xử lý thumbnail: có thể là file mới upload hoặc URL từ gallery
+    const thumbnailUrl = (body as any).thumbnail as string | undefined;
+    const thumbnailFile = files.thumbnail as formidable.File | undefined;
+    
+    if (thumbnailFile) {
+      // File mới upload - upload lên Cloudinary
       const cloudName = process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
       const apiKey = process.env.CLOUD_API_KEY || process.env.CLOUDINARY_API_KEY;
       const apiSecret = process.env.CLOUD_API_SECRET || process.env.CLOUDINARY_API_SECRET;
@@ -78,9 +86,8 @@ const createNewPost: NextApiHandler = async (req, res) => {
       }
       
       try {
-        const thumbnail = files.thumbnail as formidable.File;
         const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-          thumbnail.filepath,
+          thumbnailFile.filepath,
           { folder: process.env.CLOUDINARY_FOLDER || "q8design" }
         );
         newPost.thumbnail = { url, public_id };
@@ -90,9 +97,16 @@ const createNewPost: NextApiHandler = async (req, res) => {
           error: cloudinaryError.message || "Lỗi upload ảnh thumbnail. Vui lòng thử lại." 
         });
       }
+    } else if (thumbnailUrl && thumbnailUrl.trim()) {
+      // URL từ gallery - lưu trực tiếp URL (không cần upload lại)
+      const trimmedUrl = thumbnailUrl.trim();
+      console.log("📸 Lưu thumbnail từ gallery:", trimmedUrl);
+      // Lưu object với url, không có public_id (vì không upload lên Cloudinary)
+      newPost.thumbnail = { url: trimmedUrl };
     }
 
     await newPost.save();
+    console.log("✅ Bài viết đã được lưu với thumbnail:", newPost.thumbnail);
     res.json({ post: newPost });
   } catch (error: any) {
     console.error("Lỗi tạo bài viết:", error);
