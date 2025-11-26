@@ -176,28 +176,55 @@ const SEOForm: FC<Props> = ({
     category: "",
     focusKeyword: "",
   });
+  
+  // Track if slug has been manually edited
+  const [isSlugManuallyEdited, setIsSlugManuallyEdited] = useState(false);
 
   const handleChange: ChangeEventHandler<
     HTMLTextAreaElement | HTMLInputElement | HTMLSelectElement
   > = ({ target }) => {
     let { name, value } = target;
     if (name === "meta") value = value.substring(0, 250);
+    
+    // If slug is being edited manually
+    if (name === "slug") {
+      // If slug is cleared, allow auto-generation again
+      if (!value || value.trim() === "") {
+        setIsSlugManuallyEdited(false);
+      } else {
+        // Otherwise, mark as manually edited
+        setIsSlugManuallyEdited(true);
+      }
+    }
+    
     const newValues = { ...values, [name]: value };
     setValues(newValues);
     onChange(newValues);
   };
 
+  // Only auto-generate slug from title if:
+  // 1. Slug is empty (always allow auto-generation when empty)
+  // 2. Slug exists but hasn't been manually edited
   useEffect(() => {
-    const slug = slugify(title.toLowerCase(), {
-      strict: true,
-    });
-    const newValues = { ...values, slug };
-    setValues(newValues);
-    onChange(newValues);
-  }, [title, onChange]);
+    if (title) {
+      // If slug is empty, always auto-generate
+      // If slug exists but hasn't been manually edited, auto-generate
+      if (!values.slug || !isSlugManuallyEdited) {
+        const slug = slugify(title.toLowerCase(), {
+          strict: true,
+        });
+        setValues((prevValues) => {
+          const newValues = { ...prevValues, slug };
+          onChange(newValues);
+          return newValues;
+        });
+      }
+    }
+  }, [title, values.slug, isSlugManuallyEdited, onChange]);
 
   useEffect(() => {
     if (initialValue) {
+      const hasExistingSlug = !!initialValue.slug;
       setValues({
         meta: initialValue.meta || "",
         slug: slugify(initialValue.slug || "", {
@@ -207,6 +234,13 @@ const SEOForm: FC<Props> = ({
         category: initialValue.category || "",
         focusKeyword: initialValue.focusKeyword || "",
       });
+      // If initialValue has a slug, it means it's been set before, so mark as manually edited
+      // This prevents auto-generation from overwriting existing slug
+      // If slug is empty, allow auto-generation from title
+      setIsSlugManuallyEdited(hasExistingSlug);
+    } else {
+      // Reset when initialValue is cleared
+      setIsSlugManuallyEdited(false);
     }
   }, [initialValue]);
 

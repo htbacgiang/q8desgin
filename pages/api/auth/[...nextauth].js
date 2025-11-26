@@ -4,6 +4,7 @@ import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { MongoDBAdapter } from "@next-auth/mongodb-adapter";
 import bcrypt from "bcryptjs";
+import mongoose from "mongoose";
 import User from "../../../models/User";
 import clientPromise from "../../../lib/mongodb";
 import db from "../../../utils/db";
@@ -37,6 +38,11 @@ export const authOptions = {
       },
       async authorize(credentials) {
         try {
+          // Đảm bảo MongoDB đã kết nối
+          if (mongoose.connection.readyState !== 1) {
+            await db.connectDb();
+          }
+          
           const { email, phone, password } = credentials;
           if (!password) {
             throw new Error("Vui lòng nhập mật khẩu.");
@@ -90,6 +96,11 @@ export const authOptions = {
       // Xử lý khi user đăng nhập bằng Google/Facebook
       if (account?.provider === "google" || account?.provider === "facebook") {
         try {
+          // Đảm bảo MongoDB đã kết nối
+          if (mongoose.connection.readyState !== 1) {
+            await db.connectDb();
+          }
+          
           console.log(`OAuth signIn for ${user.email} via ${account.provider}`);
           
           // Kiểm tra xem user đã tồn tại chưa
@@ -201,6 +212,10 @@ export const authOptions = {
     
     async session({ session, token }) {
       try {
+        // Đảm bảo MongoDB đã kết nối trước khi truy vấn
+        if (mongoose.connection.readyState !== 1) {
+          await db.connectDb();
+        }
         
         if (token?.id) {
           const user = await User.findById(token.id);
