@@ -20,7 +20,8 @@
     "test-sitemap-simple": "node test-sitemap-simple.js",
     "test-all-sitemaps": "node test-all-sitemaps.js",
     "import-projects": "node scripts/import-projects.js",
-    "migrate-projects": "node scripts/migrate-projects-to-db.js"
+    "migrate-projects": "node scripts/migrate-projects-to-db.js",
+    "check-cloudinary": "node scripts/check-cloudinary-config.js"
   },
   "dependencies": {
     "@emotion/react": "^11.13.3",

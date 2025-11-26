@@ -65,19 +65,45 @@ const createNewPost: NextApiHandler = async (req, res) => {
 
     // Nếu có thumbnail, upload lên Cloudinary
     if (files.thumbnail) {
-      const thumbnail = files.thumbnail as formidable.File;
-      const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-        thumbnail.filepath,
-        { folder: process.env.CLOUDINARY_FOLDER || "q8design" }
-      );
-      newPost.thumbnail = { url, public_id };
+      // Kiểm tra cấu hình Cloudinary trước khi upload
+      const cloudName = process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUD_API_KEY || process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUD_API_SECRET || process.env.CLOUDINARY_API_SECRET;
+      
+      if (!cloudName || !apiKey || !apiSecret) {
+        console.error("Lỗi tạo bài viết: Cloudinary chưa được cấu hình. Vui lòng kiểm tra các biến môi trường CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET");
+        return res.status(500).json({ 
+          error: "Cấu hình Cloudinary chưa đầy đủ. Vui lòng liên hệ quản trị viên." 
+        });
+      }
+      
+      try {
+        const thumbnail = files.thumbnail as formidable.File;
+        const { secure_url: url, public_id } = await cloudinary.uploader.upload(
+          thumbnail.filepath,
+          { folder: process.env.CLOUDINARY_FOLDER || "q8design" }
+        );
+        newPost.thumbnail = { url, public_id };
+      } catch (cloudinaryError: any) {
+        console.error("Lỗi upload thumbnail lên Cloudinary:", cloudinaryError);
+        return res.status(500).json({ 
+          error: cloudinaryError.message || "Lỗi upload ảnh thumbnail. Vui lòng thử lại." 
+        });
+      }
     }
 
     await newPost.save();
     res.json({ post: newPost });
   } catch (error: any) {
     console.error("Lỗi tạo bài viết:", error);
-    res.status(500).json({ error: "Lỗi máy chủ!" });
+    // Trả về thông báo lỗi chi tiết hơn để dễ debug
+    const errorMessage = error.message || "Lỗi máy chủ!";
+    if (errorMessage.includes("api_key") || errorMessage.includes("Must supply")) {
+      return res.status(500).json({ 
+        error: "Cấu hình Cloudinary chưa đầy đủ. Vui lòng kiểm tra các biến môi trường CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET trên VPS." 
+      });
+    }
+    res.status(500).json({ error: errorMessage });
   }
 };
 

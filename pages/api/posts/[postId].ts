@@ -159,14 +159,33 @@ const updatePost: NextApiHandler = async (req, res) => {
     const thumbnailUrl = (body as any).thumbnail;
     
     if (thumbnail) {
-      // File upload mới - upload lên cloudinary
-      const { secure_url: url, public_id } = await cloudinary.uploader.upload(
-        thumbnail.filepath,
-        { folder: process.env.CLOUDINARY_FOLDER || "q8desgin" }
-      );
-      const oldPublicId = post.thumbnail?.public_id;
-      if (oldPublicId) await cloudinary.uploader.destroy(oldPublicId);
-      post.thumbnail = { url, public_id };
+      // Kiểm tra cấu hình Cloudinary trước khi upload
+      const cloudName = process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+      const apiKey = process.env.CLOUD_API_KEY || process.env.CLOUDINARY_API_KEY;
+      const apiSecret = process.env.CLOUD_API_SECRET || process.env.CLOUDINARY_API_SECRET;
+      
+      if (!cloudName || !apiKey || !apiSecret) {
+        console.error("Lỗi cập nhật bài viết: Cloudinary chưa được cấu hình.");
+        return res.status(500).json({ 
+          error: "Cấu hình Cloudinary chưa đầy đủ. Vui lòng kiểm tra các biến môi trường CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET." 
+        });
+      }
+      
+      try {
+        // File upload mới - upload lên cloudinary
+        const { secure_url: url, public_id } = await cloudinary.uploader.upload(
+          thumbnail.filepath,
+          { folder: process.env.CLOUDINARY_FOLDER || "q8desgin" }
+        );
+        const oldPublicId = post.thumbnail?.public_id;
+        if (oldPublicId) await cloudinary.uploader.destroy(oldPublicId);
+        post.thumbnail = { url, public_id };
+      } catch (cloudinaryError: any) {
+        console.error("Lỗi upload thumbnail lên Cloudinary:", cloudinaryError);
+        return res.status(500).json({ 
+          error: cloudinaryError.message || "Lỗi upload ảnh thumbnail. Vui lòng thử lại." 
+        });
+      }
     } else if (thumbnailUrl && thumbnailUrl !== post.thumbnail?.url) {
       // URL từ gallery - lưu trực tiếp URL (không cần upload lại)
       post.thumbnail = { url: thumbnailUrl, public_id: undefined };
@@ -176,7 +195,13 @@ const updatePost: NextApiHandler = async (req, res) => {
     res.json({ post, message: "Cập nhật thành công!" });
   } catch (error: any) {
     console.error("Update post error:", error);
-    res.status(500).json({ error: error.message || "Internal server error" });
+    const errorMessage = error.message || "Internal server error";
+    if (errorMessage.includes("api_key") || errorMessage.includes("Must supply")) {
+      return res.status(500).json({ 
+        error: "Cấu hình Cloudinary chưa đầy đủ. Vui lòng kiểm tra các biến môi trường CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET trên VPS." 
+      });
+    }
+    res.status(500).json({ error: errorMessage });
   } finally {
     try {
       await db.disconnectDb();

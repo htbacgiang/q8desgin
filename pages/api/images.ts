@@ -2,11 +2,19 @@ import type { NextApiHandler } from "next";
 import { IncomingForm } from "formidable";
 import { v2 as cloudinary } from "cloudinary";
 
-// Cấu hình Cloudinary
+// Cấu hình Cloudinary - sử dụng cùng biến môi trường như lib/cloudinary.ts
+const cloudName = process.env.CLOUD_NAME || process.env.CLOUDINARY_CLOUD_NAME;
+const apiKey = process.env.CLOUD_API_KEY || process.env.CLOUDINARY_API_KEY;
+const apiSecret = process.env.CLOUD_API_SECRET || process.env.CLOUDINARY_API_SECRET;
+
+if (!cloudName || !apiKey || !apiSecret) {
+  console.error("⚠️  Cloudinary configuration missing in images.ts!");
+}
+
 cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
+  cloud_name: cloudName,
+  api_key: apiKey,
+  api_secret: apiSecret,
 });
 
 // Hàm tiện ích để parse form multipart/form-data

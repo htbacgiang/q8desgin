@@ -10,14 +10,17 @@ NEXTAUTH_URL=https://ecobacgiang.vn
 # Sepay Configuration
 SEPAY_API_KEY=your_sepay_api_key_here
 
-# Cloudinary
+# Cloudinary - BẮT BUỘC cho tính năng upload ảnh và tạo bài viết
+# Lấy thông tin từ: https://cloudinary.com/console
 CLOUD_NAME=your-cloud-name
 CLOUD_API_KEY=your-api-key
 CLOUD_API_SECRET=your-api-secret
 CLOUD_UPDATE_PRESET=your-upload-preset
 CLOUD_API=https://api.cloudinary.com/v1_1/your-cloud-name/image/upload
 NEXT_PUBLIC_CLOUD_NAME=your-cloud-name
-CLOUDINARY_FOLDER=btacademy
+CLOUDINARY_FOLDER=q8desgin
+# LƯU Ý: Trên VPS, các biến CLOUD_NAME, CLOUD_API_KEY, CLOUD_API_SECRET PHẢI được cấu hình
+# Nếu thiếu sẽ gây lỗi "Must supply api_key" khi tạo bài viết
 
 # Email Configuration - Google SMTP (App Password Only)
 # Cấu hình gửi email với Gmail App Password
