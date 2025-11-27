@@ -138,7 +138,7 @@ const ToolBar: FC<Props> = ({
     editor.chain().focus().insertContent(iframeHtml).run();
   };
 
-  const handleEmbedImage = (url: string, alt?: string, showCaption: boolean = true) => {
+  const handleEmbedImage = (url: string, alt?: string, showCaption: boolean = false) => {
     if (!editor) return;
     
     // Thêm data attribute để lưu thông tin hiển thị caption
@@ -154,7 +154,43 @@ const ToolBar: FC<Props> = ({
       imageAttrs['data-show-caption'] = 'false';
     }
     
-    editor.chain().focus().setImage(imageAttrs).run();
+    // Lưu vị trí hiện tại trước khi chèn
+    const { state } = editor;
+    const { selection } = state;
+    const insertPos = selection.from;
+    
+    // Chèn ảnh
+    editor.chain()
+      .focus()
+      .setImage(imageAttrs)
+      .run();
+    
+    // Tìm và chọn ảnh vừa chèn ngay sau khi chèn
+    // Sử dụng requestAnimationFrame để đợi DOM được cập nhật
+    requestAnimationFrame(() => {
+      if (!editor) return;
+      
+      const { state: newState } = editor;
+      const { doc } = newState;
+      
+      // Tìm node ảnh vừa chèn ở vị trí insertPos hoặc gần đó
+      let imagePos = -1;
+      doc.descendants((node, pos) => {
+        if (node.type.name === 'image' && node.attrs.src === url) {
+          // Tìm ảnh gần với vị trí chèn nhất
+          if (imagePos === -1 || Math.abs(pos - insertPos) < Math.abs(imagePos - insertPos)) {
+            imagePos = pos;
+          }
+        }
+      });
+      
+      // Nếu tìm thấy ảnh, chọn nó
+      if (imagePos >= 0) {
+        editor.chain()
+          .setNodeSelection(imagePos)
+          .run();
+      }
+    });
   };
 
   const Head = () => {

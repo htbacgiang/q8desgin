@@ -9,7 +9,7 @@ interface Props {
 const EmbedImage: FC<Props> = ({ onSubmit }): JSX.Element => {
   const [url, setUrl] = useState("");
   const [alt, setAlt] = useState("");
-  const [showCaption, setShowCaption] = useState(true); // Mặc định hiển thị caption
+  const [showCaption, setShowCaption] = useState(false); // Mặc định không hiển thị caption
   const [visible, setVisible] = useState(false);
 
   const handleSubmit = () => {
@@ -18,7 +18,7 @@ const EmbedImage: FC<Props> = ({ onSubmit }): JSX.Element => {
     onSubmit(url, alt || "", showCaption);
     setUrl("");
     setAlt("");
-    setShowCaption(true); // Reset về mặc định
+    setShowCaption(false); // Reset về mặc định
     hideForm();
   };
 

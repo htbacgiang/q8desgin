@@ -17,15 +17,17 @@ const EditImage: FC<Props> = ({ editor }): JSX.Element | null => {
   const [imageData, setImageData] = useState<ImageOption>({
     src: "",
     alt: "",
-    showCaption: true,
+    showCaption: false,
   });
 
   const getImageAttributes = useCallback(() => {
     const attrs = editor.getAttributes("image");
+    // Mặc định false, chỉ true khi có attribute = "true"
+    const showCaption = attrs["data-show-caption"] === "true";
     return {
       src: attrs.src || "",
       alt: attrs.alt || "",
-      showCaption: attrs["data-show-caption"] !== "false",
+      showCaption: showCaption,
     };
   }, [editor]);
 
@@ -62,7 +64,8 @@ const EditImage: FC<Props> = ({ editor }): JSX.Element | null => {
       alt: data.alt || "",
     };
 
-    // Thêm data attribute để đánh dấu có hiển thị caption hay không
+    // Luôn set data-show-caption dựa trên giá trị showCaption
+    // Chỉ hiển thị caption khi showCaption = true VÀ có alt text
     if (data.showCaption && data.alt) {
       imageAttrs["data-show-caption"] = "true";
     } else {
@@ -74,6 +77,16 @@ const EditImage: FC<Props> = ({ editor }): JSX.Element | null => {
       .focus()
       .setImage(imageAttrs)
       .run();
+    
+    // Cập nhật lại imageData ngay sau khi lưu để đồng bộ state
+    // Sử dụng requestAnimationFrame để đợi DOM được cập nhật
+    requestAnimationFrame(() => {
+      if (editor.isActive("image")) {
+        const attrs = getImageAttributes();
+        setImageData(attrs);
+      }
+    });
+    
     setShowEditForm(false);
   };
 
@@ -87,7 +100,9 @@ const EditImage: FC<Props> = ({ editor }): JSX.Element | null => {
   };
 
   const handleEditClick = () => {
+    // Đảm bảo lấy attributes mới nhất từ editor
     const attrs = getImageAttributes();
+    console.log('EditImage - handleEditClick:', attrs); // Debug log
     setImageData(attrs);
     setShowEditForm(true);
   };

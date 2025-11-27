@@ -110,6 +110,47 @@ const SinglePost: NextPage<Props> = ({ post, meta }) => {
   const { title, content, meta: postMeta, slug, thumbnail, category, createdAt, recentPosts } = post;
   const host = "https://q8design.vn";
 
+  // Xử lý content để thêm figcaption cho ảnh có data-show-caption="true"
+  const processedContent = (() => {
+    if (!content) return content;
+    
+    let processed = content;
+    
+    // Tìm tất cả các thẻ img (không nằm trong figure)
+    // Regex này sẽ match img không nằm trong figure tag
+    processed = processed.replace(
+      /(<figure[^>]*>[\s\S]*?<\/figure>)|<img([^>]*)>/gi,
+      (match, figureTag, imgAttrs) => {
+        // Nếu là figure tag thì giữ nguyên
+        if (figureTag) {
+          return match;
+        }
+        
+        // Xử lý img tag
+        if (!imgAttrs) return match;
+        
+        // Kiểm tra xem có data-show-caption="true" không
+        const showCaptionMatch = imgAttrs.match(/data-show-caption=["']true["']/i);
+        if (!showCaptionMatch) {
+          return match; // Không có data-show-caption="true", giữ nguyên
+        }
+        
+        // Lấy alt text
+        const altMatch = imgAttrs.match(/alt=["']([^"']+)["']/i);
+        if (!altMatch || !altMatch[1]) {
+          return match; // Không có alt text, giữ nguyên
+        }
+        
+        const altText = altMatch[1];
+        
+        // Bọc ảnh trong figure và thêm figcaption
+        return `<figure><img${imgAttrs}><figcaption>${altText}</figcaption></figure>`;
+      }
+    );
+    
+    return processed;
+  })();
+
   return (
     <DefaultLayout 
       title={meta?.title}
@@ -143,8 +184,38 @@ const SinglePost: NextPage<Props> = ({ post, meta }) => {
               <div className="mt-2 uppercase text-blue-800 font-xl">
                 <b>{category}</b>
               </div>
-              <div className="blog prose prose-lg dark:prose-invert max-w-2xl md:max-w-4xl lg:max-w-5xl">
-                {parse(content)}
+              <div className="blog prose prose-lg dark:prose-invert max-w-2xl md:max-w-4xl lg:max-w-5xl [&_img]:mx-auto">
+                <style jsx>{`
+                  .blog img {
+                    display: block;
+                    margin: 1.5em auto;
+                  }
+                  .blog figure {
+                    margin: 1.5em 0;
+                    text-align: center;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                  }
+                  .blog figure img {
+                    display: block;
+                    margin: 0 auto;
+                  }
+                  .blog figcaption {
+                    margin-top: 0.5em;
+                    font-size: 0.875em;
+                    color: #6b7280;
+                    font-style: italic;
+                    text-align: center;
+                    width: 100%;
+                    max-width: 100%;
+                  }
+                  .dark .blog figcaption {
+                    color: #9ca3af;
+                  }
+                `}</style>
+                {parse(processedContent || content)}
               </div>
             </div>
           </div>

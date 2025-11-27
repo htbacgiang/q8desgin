@@ -18,6 +18,7 @@ import TableCell from "@tiptap/extension-table-cell";
 
 import ToolBar from "./ToolBar";
 import EditLink from "./Link/EditLink";
+import EditImage from "./Image/EditImage";
 import GalleryModal, { ImageSelectionResult } from "./GalleryModal";
 import axios from "axios";
 import SEOForm, { SeoResult } from "./SeoForm";
@@ -150,7 +151,25 @@ const Editor: FC<Props> = ({
           class: "w-full aspect-video",
         },
       }),
-      TipTapImage.configure({
+      TipTapImage.extend({
+        addAttributes() {
+          return {
+            ...this.parent?.(),
+            'data-show-caption': {
+              default: 'false',
+              parseHTML: element => element.getAttribute('data-show-caption') || 'false',
+              renderHTML: attributes => {
+                if (!attributes['data-show-caption']) {
+                  return {};
+                }
+                return {
+                  'data-show-caption': attributes['data-show-caption'],
+                };
+              },
+            },
+          };
+        },
+      }).configure({
         HTMLAttributes: {
           class: "mx-auto",
         },
@@ -648,6 +667,7 @@ const Editor: FC<Props> = ({
           {/* Content Section - Mở rộng xuống dưới */}
           <div className="content-section">
             {editor ? <EditLink editor={editor} /> : null}
+            {editor ? <EditImage editor={editor} /> : null}
             <div className="editor-content">
               <EditorContent editor={editor} className="min-h-[300px]" />
             </div>

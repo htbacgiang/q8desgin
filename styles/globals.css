@@ -1089,7 +1089,10 @@ html, body {
 .prose p:last-child {
   margin-bottom: 0 !important;
 }
-
+.prose figure {
+  margin-bottom: 0 !important;
+  text-align: center !important;
+}
 /* Đảm bảo khoảng cách cho editor content */
 .ProseMirror p {
   margin-top: 1em !important;
