@@ -1,41 +1,29 @@
-import NextAuth from "next-auth"
+// Type declarations for next-auth/react
+// This ensures TypeScript recognizes the next-auth/react module
+// The types are already in node_modules/next-auth/react/index.d.ts
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string
-      name?: string | null
-      email?: string | null
-      image?: string | null
-      role: "user" | "admin"
-      emailVerified?: boolean
-      gender?: string
-      phone?: string
-      dateOfBirth?: string | null
-      hasAddresses?: boolean
-      hasWishlist?: boolean
-    }
-  }
+// Declare the module to help TypeScript resolve it
+declare module "next-auth/react" {
+  export function signIn<P extends string | undefined = undefined>(
+    provider?: P,
+    options?: any,
+    authorizationParams?: any
+  ): Promise<any>;
 
-  interface User {
-    id: string
-    name?: string | null
-    email?: string | null
-    image?: string | null
-    role: "user" | "admin"
-    emailVerified?: boolean
-    gender?: string
-    phone?: string
-    dateOfBirth?: string | null
-    hasAddresses?: boolean
-    hasWishlist?: boolean
-  }
-}
+  export function signOut<R extends boolean = true>(
+    options?: any
+  ): Promise<R extends true ? undefined : any>;
 
-declare module "next-auth/jwt" {
-  interface JWT {
-    id: string
-    role: "user" | "admin"
-    emailVerified?: boolean
-  }
+  export function useSession<R extends boolean = false>(
+    options?: any
+  ): {
+    data: any;
+    status: "authenticated" | "unauthenticated" | "loading";
+    update: (data?: any) => Promise<any>;
+  };
+
+  export function getSession(params?: any): Promise<any>;
+  export function getCsrfToken(params?: any): Promise<string | undefined>;
+  export function getProviders(): Promise<any>;
+  export function SessionProvider(props: any): JSX.Element;
 }

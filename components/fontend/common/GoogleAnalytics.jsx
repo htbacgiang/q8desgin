@@ -6,14 +6,14 @@ const GoogleAnalytics = () => {
     <>
       <Script
         strategy="afterInteractive"
-        src="https://www.googletagmanager.com/gtag/js?id=G-L0CHT26L87"
+        src="https://www.googletagmanager.com/gtag/js?id=G-GQRE7T1ZVS"
       />
       <Script id="google-analytics" strategy="afterInteractive">
         {`
           window.dataLayer = window.dataLayer || [];
           function gtag(){window.dataLayer.push(arguments);}
           gtag('js', new Date());
-          gtag('config', 'G-L0CHT26L87');
+          gtag('config', 'G-GQRE7T1ZVS');
         `}
       </Script>
     </>
