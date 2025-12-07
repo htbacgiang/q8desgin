@@ -1,13 +1,15 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import { useRouter } from "next/router";
-import { FaArrowRight, FaPlay, FaChevronLeft, FaChevronRight, FaHome, FaTools, FaUserTie } from "react-icons/fa";
+import { FaArrowRight, FaArrowLeft, FaPlay, FaChevronLeft, FaChevronRight, FaHome, FaTools, FaUserTie } from "react-icons/fa";
 import ContactForm from "../header/ContactForm";
 
 export default function HeroSection() {
   const router = useRouter();
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const modalRef = useRef(null);
 
   // Slide data
   const slides = [
@@ -48,24 +50,25 @@ export default function HeroSection() {
 
   // Auto-play slides
   useEffect(() => {
+    if (isPaused || isFormOpen) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % slides.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [slides.length]);
+  }, [slides.length, isPaused, isFormOpen]);
 
   // Navigation functions
-  const goToSlide = (index) => {
+  const goToSlide = useCallback((index) => {
     setCurrentSlide(index);
-  };
+  }, []);
 
-  const nextSlide = () => {
+  const nextSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev + 1) % slides.length);
-  };
+  }, [slides.length]);
 
-  const prevSlide = () => {
+  const prevSlide = useCallback(() => {
     setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
-  };
+  }, [slides.length]);
 
   // Handle CTA button click
   const handleCTAClick = (slide) => {
@@ -81,7 +84,18 @@ export default function HeroSection() {
     setIsFormOpen((prev) => !prev);
   }, []);
 
-  // Close form with Escape key
+  // Keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (isFormOpen) return;
+      if (e.key === "ArrowLeft") prevSlide();
+      if (e.key === "ArrowRight") nextSlide();
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isFormOpen, prevSlide, nextSlide]);
+
+  // Close form with Escape key and focus trap
   useEffect(() => {
     if (!isFormOpen) return;
 
@@ -89,183 +103,305 @@ export default function HeroSection() {
       if (e.key === "Escape") toggleForm();
     };
 
+    const modal = modalRef.current;
+    const elems = modal?.querySelectorAll(
+      'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+    );
+    const first = elems?.[0];
+    const last = elems?.[elems.length - 1];
+
+    const trapTab = (e) => {
+      if (e.key === "Tab") {
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last?.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first?.focus();
+        }
+      }
+    };
+
+    first?.focus();
+    modal?.addEventListener("keydown", trapTab);
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+
+    return () => {
+      modal?.removeEventListener("keydown", trapTab);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, [isFormOpen, toggleForm]);
 
   return (
     <>
-    <div>
-      <section className="q8-hero-section relative aspect-[8/6] max-h-[80vh] sm:aspect-[8/6] sm:max-h-[80vh] md:aspect-auto md:h-screen md:min-h-[80vh] md:max-h-none w-full overflow-hidden">
-        {/* Slider Container */}
-        <div className="relative w-full h-full">
-        {/* Slides */}
-        {slides.map((slide, index) => (
-          <div
-            key={slide.id}
-            className={`absolute inset-0 transition-opacity duration-1000 ${
-              index === currentSlide ? 'opacity-100' : 'opacity-0'
-            }`}
-          >
-            {/* Background Image */}
-            <div className="absolute inset-0 ">
-              <Image
-                src={slide.image}
-                alt={slide.title}
-                fill
-                priority={index === 0}
-                className="object-contain md:object-cover"
-                quality={100}
-                sizes="100vw"
-              />
-            </div>
-
-            {/* Content - Desktop: inside image, Mobile: hidden */}
-            <div className="hidden md:flex relative z-10 w-full px-4 md:px-6 lg:px-8 xl:px-12 h-full items-center justify-center md:items-end md:justify-start pb-0 md:pb-8">
-              <div className="max-w-xs sm:max-w-md md:max-w-3xl lg:max-w-5xl text-white/90 text-center md:text-left w-full md:w-auto md:mr-0 md:ml-0">
-                {/* Service Icon */}
-                {/* Main Heading - Smaller text */}
-                <div className="text-[0.95rem] sm:text-xl md:text-3xl lg:text-4xl font-bold text-white/90 leading-tight md:text-left">
-                  <span 
-                    className="uppercase inline-block md:inline-block"
-                    style={{
-                      WebkitTextStroke: '1.5px rgba(0, 0, 0, 0.7)',
-                      paintOrder: 'stroke fill',
-                      opacity: 0.95
-                    }}
-                  >
-                    <span className="inline">Q8 Design</span>
-                    <span className="inline ml-1 md:ml-2">{slide.title}</span>
-                  </span>
-                  <span 
-                    className="block md:mt-2 mt-1  text-white/90 text-xs sm:text-base md:text-2xl mb-1 md:mb-2 lg:text-3xl md:text-left"
-                    style={{
-                      WebkitTextStroke: '1px rgba(0, 0, 0, 0.7)',
-                      paintOrder: 'stroke fill',
-                      opacity: 0.95
-                    }}
-                  >
-                    {slide.subtitle}
-                  </span>
-                </div>
-
-                {/* CTA Buttons - Smaller on mobile */}
-                <div className="flex flex-col sm:flex-row gap-1.5 sm:gap-4 mb-0 md:mb-6 justify-center items-center md:items-start md:justify-start">
-                  <button
-                    onClick={() => handleCTAClick(slide)}
-                    className="group inline-flex items-center justify-center px-3 py-2 sm:px-4 md:px-6 sm:py-3 md:py-4 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-all duration-300 transform hover:scale-105 shadow-lg border border-q8-primary-600/20 w-fit text-xs sm:text-sm md:text-base"
-                  >
-                    <span>{slide.cta}</span>
-                    <FaArrowRight className="ml-1 sm:ml-2 transition-transform group-hover:translate-x-1 text-xs sm:text-sm" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {/* Navigation Arrows - Hidden on mobile */}
-        <button
-          onClick={prevSlide}
-          className="hidden md:flex absolute left-2 sm:left-4 top-1/2 transform -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center transition-all duration-300 backdrop-blur-sm"
-          aria-label="Slide trước"
-        >
-          <FaChevronLeft className="text-sm sm:text-base md:text-lg" />
-        </button>
+      <style jsx>{`
+        .nav-arrow-btn {
+          background: rgba(0, 0, 0, 0.4);
+          backdrop-filter: blur(8px);
+          border: 2px solid rgba(255, 255, 255, 0.3);
+          width: 48px;
+          height: 48px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
         
-        <button
-          onClick={nextSlide}
-          className="hidden md:flex absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 z-20 w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-black/30 hover:bg-black/50 text-white rounded-full items-center justify-center transition-all duration-300 backdrop-blur-sm"
-          aria-label="Slide tiếp theo"
-        >
-          <FaChevronRight className="text-sm sm:text-base md:text-lg" />
-        </button>
+        .nav-arrow-btn:hover {
+          background: rgba(0, 0, 0, 0.6);
+          border-color: rgba(255, 255, 255, 0.6);
+          transform: scale(1.1);
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+        }
+        
+        .nav-arrow-btn:active {
+          transform: scale(0.95);
+        }
+        
+        @media (max-width: 768px) {
+          .nav-arrow-btn {
+            width: 40px;
+            height: 40px;
+          }
+          
+          .hero-content {
+            transform: translateY(-40px);
+          }
+          
+          .nav-arrows-container {
+            transform: translateY(-40px);
+          }
+        }
+        
+        .hero-section {
+          height: calc(100vh - 80px) !important;
+          max-height: calc(100vh - 80px) !important;
+          overflow: hidden !important;
+        }
+        
+        @media (max-width: 768px) {
+          .hero-section {
+            height: calc(100vh - 80px) !important;
+            max-height: calc(100vh - 80px) !important;
+          }
+        }
+        
+        .slide-dot {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .slide-dot:hover {
+          transform: scale(1.2);
+        }
+        
+        /* Glass effect animation from left to right */
+        @keyframes glassSweep {
+          0% {
+            transform: translateX(-100%) skewX(-15deg);
+          }
+          100% {
+            transform: translateX(200%) skewX(-15deg);
+          }
+        }
+        
+        /* Glass effect for text */
+        .hero-text-glass {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          padding: 8px 16px;
+          border-radius: 12px;
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .hero-text-glass::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 30%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.2),
+            transparent
+          );
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transform: translateX(-100%) skewX(-15deg);
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hero-text-glass:hover::before {
+          animation: glassSweep 1.8s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hero-text-glass:hover {
+          /* Only glass sweep effect, no background or border */
+        }
+        
+        /* Glass effect for CTA button */
+        .hero-cta-glass {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+        
+        .hero-cta-glass::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 30%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          );
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          transform: translateX(-100%) skewX(-15deg);
+          transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hero-cta-glass:hover::before {
+          animation: glassSweep 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .hero-cta-glass:hover {
+          background: rgba(17, 24, 39, 0.7);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.2);
+          box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+          transform: translateY(-2px);
+        }
+        
+        .hero-cta-glass span,
+        .hero-cta-glass svg {
+          position: relative;
+          z-index: 1;
+        }
+      `}</style>
+      <section
+        className="hero-section relative w-full overflow-hidden"
+        style={{ 
+          height: 'calc(100vh - 80px)',
+          maxHeight: 'calc(100vh - 80px)',
+          marginTop: 0, 
+          paddingTop: 0, 
+          top: 0,
+          position: 'relative',
+          margin: 0,
+          padding: 0
+        }}
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Background Image */}
+        <div className="absolute inset-0" style={{ top: 0, height: '100%', maxHeight: '100%', overflow: 'hidden' }}>
+          <Image
+            key={currentSlide}
+            src={slides[currentSlide].image}
+            alt={slides[currentSlide].title}
+            layout="fill"
+            quality={100}
+            objectFit="cover"
+            className="brightness-90 transition-opacity duration-1000"
+            priority={currentSlide === 0}
+            onError={(e) => (e.target.src = "/images/fallback.png")}
+          />
+          <div className="absolute inset-0 bg-black bg-opacity-50"></div>
+        </div>
+
+        {/* Content */}
+        <div className="hero-content relative z-20 flex mb-10 flex-col items-center justify-center h-full text-center text-white">
+          <div
+            key={`content-${currentSlide}`}
+            className="flex flex-col items-center text-center"
+          >
+            <h2 className="text-xl md:text-4xl font-bold">
+              <span className="uppercase">Q8 Design {slides[currentSlide].title}</span>
+            </h2>
+            <p className="text-gray-100 text-xl md:text-2xl mb-4 uppercase">
+              {slides[currentSlide].subtitle}
+            </p>
+         
+            <button
+              onClick={() => handleCTAClick(slides[currentSlide])}
+              className="hero-cta-glass flex items-center bg-gray-900 text-white px-6 py-3 rounded-full focus:outline-none focus:ring-2 focus:ring-gray-400"
+              aria-label={slides[currentSlide].cta}
+            >
+              <span>{slides[currentSlide].cta}</span>
+              <FaArrowRight className="ml-2" />
+            </button>
+          </div>
+        </div>
+
+        {/* Navigation Arrows */}
+        <div className="nav-arrows-container hidden  absolute inset-y-0 left-4 md:left-6 md:flex items-center z-30">
+          <button
+            onClick={prevSlide}
+            aria-label="Slide trước"
+            className="nav-arrow-btn group focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent rounded-full"
+          >
+            <FaArrowLeft className="text-white text-xl md:text-2xl transition-transform group-hover:scale-110" />
+          </button>
+        </div>
+        <div className="nav-arrows-container hidden md:flex absolute inset-y-0 right-4 md:right-6 items-center z-30">
+          <button
+            onClick={nextSlide}
+            aria-label="Slide tiếp theo"
+            className="nav-arrow-btn group focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent rounded-full"
+          >
+            <FaArrowRight className="text-white text-xl md:text-2xl transition-transform group-hover:scale-110" />
+          </button>
+        </div>
 
         {/* Slide Indicators */}
-        <div className="absolute bottom-6 sm:bottom-8 left-1/2 transform -translate-x-1/2 z-20 flex space-x-2 sm:space-x-3">
-          {slides.map((_, index) => (
+        <div className="absolute bottom-6 md:bottom-8 left-0 right-0 flex justify-center space-x-2 z-30">
+          {slides.map((_, idx) => (
             <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`w-2 h-2 sm:w-3 sm:h-3 rounded-full transition-all duration-300 ${
-                index === currentSlide
-                  ? 'bg-q8-primary-50 scale-125'
-                  : 'bg-q8-primary-500/50 hover:bg-q8-primary-600/70'
-              }`}
-              aria-label={`Chuyển đến slide ${index + 1}`}
+              key={idx}
+              className={`slide-dot transition-all duration-300 ${
+                currentSlide === idx 
+                  ? "w-8 h-3 bg-white opacity-100" 
+                  : "w-3 h-3 bg-white opacity-50 hover:opacity-75"
+              } rounded-full cursor-pointer focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-transparent`}
+              onClick={() => goToSlide(idx)}
+              aria-label={`Chuyển đến slide ${idx + 1}`}
             />
           ))}
         </div>
-        </div>
       </section>
-
-      {/* Mobile Content - Below image */}
-      <div className="md:hidden w-full px-4 pt-3 bg-q8-primary-50 relative overflow-hidden">
-        {/* Background Pattern - same as AboutSection */}
-        <div className="absolute inset-0 opacity-[0.03]">
-          <div className="absolute top-0 left-0 w-full h-full" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23121212' fill-opacity='1'%3E%3Ccircle cx='30' cy='30' r='1'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
-          }}></div>
-        </div>
-        
-        {/* Gradient Overlay - same as AboutSection */}
-        <div className="absolute inset-0 bg-gradient-to-br from-q8-primary-50/50 via-transparent to-q8-primary-100/30"></div>
-        
-        <div className="relative z-10">
-          {slides.map((slide, index) => (
-            <div
-              key={slide.id}
-              className={`transition-all duration-500 ${
-                index === currentSlide ? 'opacity-100 block' : 'opacity-0 hidden'
-              }`}
-            >
-              {/* Main Heading */}
-              <div className="text-xl font-bold text-gray-900 leading-tight text-center mb-2">
-                <span className="uppercase">
-                  <span className="inline">Q8 Design</span>
-                  <span className="inline ml-1">{slide.title}</span>
-                </span>
-                <span className="block mt-1 text-gray-700 text-base">
-                  {slide.subtitle}
-                </span>
-              </div>
-
-              {/* CTA Button */}
-              <div className="flex justify-center items-center mt-4">
-                <button
-                  onClick={() => handleCTAClick(slide)}
-                  className="group inline-flex items-center justify-center px-6 py-3 bg-q8-primary-900 hover:bg-q8-primary-700 text-white font-bold rounded-full transition-all duration-300 transform hover:scale-105  border border-q8-primary-600/20 w-fit text-sm"
-                >
-                  <span>{slide.cta}</span>
-                  <FaArrowRight className="ml-2 transition-transform group-hover:translate-x-1 text-sm" />
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
 
       {/* Registration Form Modal */}
       {isFormOpen && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
           onClick={(e) => {
             if (e.target === e.currentTarget) toggleForm();
           }}
         >
-          <div className="relative bg-white rounded-2xl w-full max-w-4xl mx-4 max-h-[90vh] overflow-y-auto">
+          <div
+            ref={modalRef}
+            className="rounded-lg w-full max-w-md sm:max-w-lg md:max-w-2xl lg:max-w-5xl relative bg-white"
+          >
             {/* Close Button */}
             <button
-              className="absolute top-4 right-4 z-10 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center transition-colors"
+              className="absolute top-2 right-2 text-gray-600 hover:text-gray-800"
               onClick={toggleForm}
-              aria-label="Đóng form"
+              aria-label="Close form"
             >
               <svg
                 className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
+                xmlns="http://www.w3.org/2000/svg"
               >
                 <path
                   strokeLinecap="round"
