@@ -54,7 +54,7 @@ export default function AboutSection() {
           <div className="relative order-2 lg:order-1">
             <div className="relative overflow-hidden rounded-3xl shadow-2xl group">
               <Image
-                src="/images/team-q8.webp"
+                src="/images/q8-desgin-team.webp"
                 alt="Q8 Design team working"
                 width={600}
                 height={500}
