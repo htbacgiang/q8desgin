@@ -80,6 +80,10 @@ const saveDraft: NextApiHandler = async (req, res) => {
         existingPost.tags = tags;
         existingPost.category = category || existingPost.category;
         existingPost.isDraft = true;
+        // Nếu slug mới đụng trùng bài viết khác, tạo slug khác để tránh lỗi duplicate key
+        if (slug && slug !== existingPost.slug) {
+          existingPost.slug = await ensureUniqueSlug(slug, existingPost._id.toString());
+        }
         // Cập nhật trạng thái nổi bật
         if (typeof isFeatured === 'boolean') {
           existingPost.isFeatured = isFeatured;
@@ -109,10 +113,14 @@ const saveDraft: NextApiHandler = async (req, res) => {
       // Đảm bảo meta luôn có giá trị (bắt buộc trong model)
       const metaValue = meta && meta.trim() !== '' ? meta : "Nháp bài viết - Meta description sẽ được cập nhật sau";
       
+      const uniqueSlug = await ensureUniqueSlug(
+        slug && slug.trim() ? slug.trim() : title || undefined
+      );
+
       const newDraft = new Post({
         title: title || "Nháp bài viết",
         content: content || "",
-        slug: slug || `draft-${Date.now()}`,
+        slug: uniqueSlug,
         meta: metaValue,
         tags,
         category: category || "",
@@ -143,6 +151,23 @@ const saveDraft: NextApiHandler = async (req, res) => {
     console.error("Lỗi lưu nháp:", error);
     res.status(500).json({ error: "Lỗi máy chủ!" });
   }
+};
+
+const ensureUniqueSlug = async (rawSlug?: string, excludeId?: string): Promise<string> => {
+  // Ưu tiên slug client gửi lên, fallback draft-{timestamp}
+  const baseSlug = (rawSlug && rawSlug.trim()) ? rawSlug.trim() : `draft-${Date.now()}`;
+  let candidate = baseSlug;
+  let suffix = 1;
+
+  // Nếu có excludeId (khi cập nhật), bỏ qua chính bài viết đó
+  const conflictFilter = (slug: string) =>
+    Post.findOne(excludeId ? { slug, _id: { $ne: excludeId } } : { slug });
+
+  while (await conflictFilter(candidate)) {
+    candidate = `${baseSlug}-${suffix++}`;
+  }
+
+  return candidate;
 };
 
 const updateDraftStatus: NextApiHandler = async (req, res) => {

@@ -46,10 +46,10 @@ const createNewPost: NextApiHandler = async (req, res) => {
 
     await db.connectDb();
 
-    const alreadyExists = await Post.findOne({ slug });
-    if (alreadyExists) {
-      return res.status(400).json({ error: "Slug phải là duy nhất!" });
-    }
+    // Đảm bảo slug luôn duy nhất để tránh lỗi duplicate key
+    const uniqueSlug = await ensureUniqueSlug(
+      slug && slug.trim() ? slug.trim() : title || undefined
+    );
 
     // Lấy isFeatured từ body (có thể là string 'true' hoặc boolean)
     const isFeaturedValue = (body as any).isFeatured;
@@ -59,7 +59,7 @@ const createNewPost: NextApiHandler = async (req, res) => {
     const newPost = new Post({
       title,
       content,
-      slug,
+      slug: uniqueSlug,
       meta,
       tags,
       category,
@@ -119,6 +119,18 @@ const createNewPost: NextApiHandler = async (req, res) => {
     }
     res.status(500).json({ error: errorMessage });
   }
+};
+
+const ensureUniqueSlug = async (rawSlug?: string): Promise<string> => {
+  const baseSlug = (rawSlug && rawSlug.trim()) ? rawSlug.trim() : `post-${Date.now()}`;
+  let candidate = baseSlug;
+  let suffix = 1;
+
+  while (await Post.findOne({ slug: candidate })) {
+    candidate = `${baseSlug}-${suffix++}`;
+  }
+
+  return candidate;
 };
 
 const readPosts: NextApiHandler = async (req, res) => {
