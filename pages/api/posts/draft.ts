@@ -64,7 +64,10 @@ const saveDraft: NextApiHandler = async (req, res) => {
     const category = getFieldValue(fields.category);
     const postId = getFieldValue((fields as any).postId);
     const isFeaturedValue = getFieldValue((fields as any).isFeatured);
-    const isFeatured = isFeaturedValue === 'true' || isFeaturedValue === true;
+    const isFeatured =
+      typeof isFeaturedValue === 'string'
+        ? ["true", "1", "on", "yes"].includes(isFeaturedValue.toLowerCase())
+        : !!isFeaturedValue;
 
     await db.connectDb();
 
