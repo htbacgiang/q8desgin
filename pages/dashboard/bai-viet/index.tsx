@@ -181,28 +181,30 @@ export const getServerSideProps: GetServerSideProps<{
   try {
     await db.connectDb();
 
-    // Lấy tất cả bài viết bao gồm cả nháp, nhưng loại trừ các bài đã xóa
-    // Chỉ lấy bài viết có deletedAt không phải là Date (null, undefined, hoặc không tồn tại)
+    // Lấy tất cả bài viết bao gồm cả nháp (isDraft: true và false), nhưng loại trừ các bài đã xóa
+    // Filter: chỉ loại trừ các bài có deletedAt là Date (đã bị xóa)
+    // Không lọc theo isDraft để hiển thị cả bài viết nháp và đã công khai
     const filter = {
       $or: [
         { deletedAt: null },
-        { deletedAt: { $exists: false } },
-        { deletedAt: { $not: { $type: "date" } } }
+        { deletedAt: { $exists: false } }
       ]
     };
     
     const totalPosts = await Post.countDocuments(filter);
     const totalPages = Math.ceil(totalPosts / limit);
     
-    // Lấy bài viết đầu tiên với limit, loại trừ các bài đã xóa
+    // Lấy bài viết đầu tiên với limit, bao gồm cả nháp và đã công khai, loại trừ các bài đã xóa
     const posts = await Post.find(filter)
       .sort({ createdAt: -1 })
       .skip(0)
       .limit(limit)
       .lean();
     
-    console.log("📋 Dashboard bai-viet - Total posts (not deleted):", totalPosts);
+    console.log("📋 Dashboard bai-viet - Total posts (including drafts, excluding deleted):", totalPosts);
     console.log("📋 Dashboard bai-viet - Posts found:", posts.length);
+    console.log("📋 Dashboard bai-viet - Drafts:", posts.filter(p => p.isDraft).length);
+    console.log("📋 Dashboard bai-viet - Published:", posts.filter(p => !p.isDraft).length);
 
     const formattedPosts = formatPosts(posts);
 

@@ -305,14 +305,22 @@ export const getServerSideProps: GetServerSideProps<
   try {
     await db.connectDb();
 
-    const post = await Post.findOne({ slug: params?.slug });
+    // Chỉ lấy bài viết đã publish (không phải nháp) và chưa bị xóa
+    const post = await Post.findOne({ 
+      slug: params?.slug,
+      isDraft: false,
+      deletedAt: null
+    });
     if (!post) {
       console.log(`Post not found for slug: ${params?.slug}`);
       return { notFound: true };
     }
 
+    // Chỉ lấy các bài viết đã publish và chưa bị xóa cho recent posts
     const posts = await Post.find({
       _id: { $ne: post._id },
+      isDraft: false,
+      deletedAt: null
     })
       .sort({ createdAt: -1 })
       .limit(5)

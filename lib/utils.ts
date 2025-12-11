@@ -49,19 +49,19 @@ export const readPostsFromDb = async (
   }
   
   // Tạo filter để loại trừ nháp nếu không includeDrafts
-  // Sử dụng $ne: true để lấy tất cả bài viết không phải draft (bao gồm false, null, undefined)
-  // Luôn loại trừ các bài viết đã xóa (deletedAt không phải là Date)
+  // Luôn loại trừ các bài viết đã xóa (deletedAt là null hoặc không tồn tại)
   const deletedFilter = {
     $or: [
       { deletedAt: null },
-      { deletedAt: { $exists: false } },
-      { deletedAt: { $not: { $type: "date" } } }
+      { deletedAt: { $exists: false } }
     ]
   };
   
   const filter: any = {
     $and: [deletedFilter]
   };
+  // Nếu includeDrafts = false, chỉ lấy bài viết đã công khai (isDraft không phải true)
+  // Nếu includeDrafts = true, lấy tất cả bài viết (cả nháp và đã công khai)
   if (!includeDrafts) {
     filter.$and.push({ isDraft: { $ne: true } });
   }
@@ -69,7 +69,7 @@ export const readPostsFromDb = async (
   console.log("🔍 readPostsFromDb:", { 
     includeDrafts, 
     filter, 
-    willFetch: includeDrafts ? "all posts (excluding deleted)" : "non-draft posts only (excluding deleted)" 
+    willFetch: includeDrafts ? "all posts including drafts (excluding deleted)" : "published posts only (excluding deleted)" 
   });
   
   let query = Post.find(filter)

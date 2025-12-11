@@ -60,7 +60,7 @@ export async function getServerSideProps() {
     const posts = formatPosts(raw) || [];
 
     // Projects are now fetched client-side via API
-
+2
   const meta = {
     title: "Q8 Design | Thiết kế & Thi công Nội thất Trọn gói",
     description:
